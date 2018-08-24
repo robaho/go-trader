@@ -4,7 +4,15 @@ A financial exchange written in Go. Uses quickfixgo for client/server communicat
 
 The client offers a command line GUI. The exchange has web access.
 
+# install
+
+git clone git://github.com/robaho/go-trader
+
 # build
+
+cd go-trader
+
+export GOPATH=$GOPATH:~/go-trader
 
 go install exchange
 
