@@ -10,7 +10,6 @@ import (
 	"github.com/quickfixgo/quickfix"
 	"os"
 	"runtime"
-	"runtime/pprof"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +20,7 @@ func main() {
 	runtime.GOMAXPROCS(8)
 
 	fix := flag.String("fix", "qf_gox_settings", "set the fix session file")
+	port := flag.String("port", "8080", "set the web server port")
 
 	flag.Parse()
 
@@ -47,12 +47,13 @@ func main() {
 
 	_ = acceptor.Start()
 
-	web.StartWebServer(":8080")
+	web.StartWebServer(":" + *port)
+	fmt.Println("web server access available at :" + *port)
 
-	f, _ := os.Create("gox.pprof")
+	//f, _ := os.Create("gox.pprof")
 
-	runtime.SetBlockProfileRate(1)
-	pprof.StartCPUProfile(f)
+	//runtime.SetBlockProfileRate(1)
+	//pprof.StartCPUProfile(f)
 
 	watching := sync.Map{}
 
@@ -107,7 +108,7 @@ func main() {
 		fmt.Print("Command?")
 	}
 
-	pprof.StopCPUProfile()
+	//pprof.StopCPUProfile()
 
 	acceptor.Stop()
 }
