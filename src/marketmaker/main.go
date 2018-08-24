@@ -8,7 +8,6 @@ import (
 	"github.com/shopspring/decimal"
 	"log"
 	"math/rand"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,11 +46,6 @@ func main() {
 	symbol := flag.String("symbol", "IBM", "set the symbol")
 	fix := flag.String("fix", "qf_mm1_settings", "set the fix session file")
 	delay := flag.Int("delay", 0, "set the delay in ms after each quote, 0 to disable")
-
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: marketmaker [options] SYMBOL\n")
-		flag.PrintDefaults()
-	}
 
 	flag.Parse()
 
