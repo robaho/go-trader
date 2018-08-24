@@ -8,6 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 	"log"
 	"math/rand"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -43,39 +44,36 @@ func (*MyCallback) OnTrade(trade *Trade) {
 func main() {
 	var callback = MyCallback{}
 
-	fileName := flag.String("fix", "qf_connector_settings", "set the fix session file")
+	symbol := flag.String("symbol", "IBM", "set the symbol")
+	fix := flag.String("fix", "qf_mm1_settings", "set the fix session file")
 	delay := flag.Int("delay", 0, "set the delay in ms after each quote, 0 to disable")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "usage: marketmaker [options] SYMBOL\n")
+		flag.PrintDefaults()
+	}
 
 	flag.Parse()
 
-	symbol := flag.Arg(0)
-	if symbol == "" {
-		log.Fatal("usage: marketmaker SYMBOL [-d/delay MS] [-fix qfsettingsfile]")
-	}
+	callback.symbol = *symbol
 
-	callback.symbol = symbol
-
-	var exchange = connector.NewConnector(&callback, *fileName, nil)
+	var exchange = connector.NewConnector(&callback, *fix, nil)
 
 	exchange.Connect()
 	if !exchange.IsConnected() {
 		panic("exchange is not connected")
 	}
 
-	instrument := IMap.GetBySymbol(symbol)
+	instrument := IMap.GetBySymbol(callback.symbol)
 	if instrument == nil {
 		log.Fatal("unable symbol", symbol)
 	}
 
 	var updates uint64
 
-	fmt.Println("waiting to stabilize...")
-
-	time.Sleep(3 * time.Second)
-
 	start := time.Now()
 
-	fmt.Println("sending quotes...")
+	fmt.Println("sending quotes on", instrument.Symbol(), "...")
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 

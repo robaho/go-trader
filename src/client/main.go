@@ -138,45 +138,6 @@ func (viewLogger) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func main() {
-	var callback = MyCallback{}
-
-	flag.Parse()
-	fileName := flag.Arg(0)
-
-	if "" == fileName {
-		fileName = "qf_connector_settings"
-	}
-
-	g, err := gocui.NewGui(gocui.OutputNormal)
-	if err != nil {
-		log.Panicln(err)
-	}
-	defer g.Close()
-
-	gui = g
-
-	g.SetManagerFunc(layout)
-
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-		log.Panicln(err)
-	}
-	if err := g.SetKeybinding("commands", gocui.KeyEnter, gocui.ModNone, processCommand); err != nil {
-		log.Panicln(err)
-	}
-
-	exchange = connector.NewConnector(callback, fileName, viewLogger{})
-
-	exchange.Connect()
-	if !exchange.IsConnected() {
-		panic("exchange is not connected")
-	}
-
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Panicln(err)
-	}
-}
-
 var MyEditor gocui.Editor = gocui.EditorFunc(simpleEditor)
 
 // simpleEditor is used as the default gocui editor.
@@ -361,4 +322,40 @@ again:
 	g.Update(scrollToEnd)
 
 	return nil
+}
+
+func main() {
+	var callback = MyCallback{}
+
+	fix := flag.String("fix", "qf_playback_settings", "set the fix session file")
+
+	flag.Parse()
+
+	g, err := gocui.NewGui(gocui.OutputNormal)
+	if err != nil {
+		log.Panicln(err)
+	}
+	defer g.Close()
+
+	gui = g
+
+	g.SetManagerFunc(layout)
+
+	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+		log.Panicln(err)
+	}
+	if err := g.SetKeybinding("commands", gocui.KeyEnter, gocui.ModNone, processCommand); err != nil {
+		log.Panicln(err)
+	}
+
+	exchange = connector.NewConnector(callback, *fix, viewLogger{})
+
+	exchange.Connect()
+	if !exchange.IsConnected() {
+		panic("exchange is not connected")
+	}
+
+	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
+		log.Panicln(err)
+	}
 }

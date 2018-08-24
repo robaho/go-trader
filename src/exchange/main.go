@@ -20,14 +20,11 @@ func main() {
 
 	runtime.GOMAXPROCS(8)
 
+	fix := flag.String("fix", "qf_gox_settings", "set the fix session file")
+
 	flag.Parse()
-	fileName := flag.Arg(0)
 
-	if "" == fileName {
-		fileName = "qf_gox_settings"
-	}
-
-	cfg, _ := os.Open(fileName)
+	cfg, _ := os.Open(*fix)
 	appSettings, err := quickfix.ParseSettings(cfg)
 	if err != nil {
 		panic(err)

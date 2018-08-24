@@ -34,24 +34,20 @@ func (*MyCallback) OnTrade(trade *Trade) {
 func main() {
 	var callback = MyCallback{}
 
-	fileName := flag.String("fix", "qf_playback_settings", "set the fix session file")
+	fix := flag.String("fix", "qf_playback_settings", "set the fix session file")
 	speed := flag.Float64("speed", 1.0, "set the playback speed")
+	playback := flag.String("file", "playback.txt", "set the playback file")
 
 	flag.Parse()
 
-	playback := flag.Arg(0)
-	if playback == "" {
-		playback = "playback.txt"
-	}
-
-	var exchange = connector.NewConnector(&callback, *fileName, nil)
+	var exchange = connector.NewConnector(&callback, *fix, nil)
 
 	exchange.Connect()
 	if !exchange.IsConnected() {
 		panic("exchange is not connected")
 	}
 
-	f, err := os.Open(playback)
+	f, err := os.Open(*playback)
 	if err != nil {
 		panic(err)
 	}
