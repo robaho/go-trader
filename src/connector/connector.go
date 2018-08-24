@@ -212,7 +212,7 @@ func (c *connector) Quote(instrument Instrument, bidPrice decimal.Decimal, bidQu
 }
 
 func (c *connector) GetExchangeCode() string {
-	return "GOX"
+	return "GOT"
 }
 func (c *connector) GetOrder(id OrderID) *Order {
 	_order, ok := c.orders.Load(id)
