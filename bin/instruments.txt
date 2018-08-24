@@ -1,0 +1,5 @@
+// in a real implementation, this information would be downloaded from the exchange
+1 E IBM
+2 E AAPL
+3 E AMZN
+4 E GOOG

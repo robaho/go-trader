@@ -1,0 +1,25 @@
+#
+# the format is:
+# timestamp symbol bidQty bidPrice askQty askPrice
+#
+# timestamp can be relative by prefixing suing the form +time, where time is has a suffix of s, us, ms, min
+# otherwise timestamp is assumed to be in ms, and the playback will use a delta from the previous to determine
+# the delay
++5s AAPL 10 100 10 101
++5s AAPL 10 101 10 102
++5s AAPL 10 100 10 101
++5s AAPL 10 101 10 102
++5s AAPL 10 100 10 101
++5s AAPL 10 101 10 102
++5s AAPL 10 100 10 101
++5s AAPL 10 101 10 102
++5s AAPL 10 100 10 101
++5s AAPL 10 101 10 102
++5s AAPL 10 100 10 101
++5s AAPL 10 101 10 102
++5s AAPL 10 100 10 101
++5s AAPL 10 101 10 102
++5s AAPL 10 100 10 101
++5s AAPL 10 101 10 102
+
+
