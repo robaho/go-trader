@@ -10,10 +10,23 @@ import (
 
 type empty struct{}
 
-var templatePath = "exchange/web/html/"
+var templatePath = "../src/exchange/web/html/"
+var templates = []string{"welcome", "sessions", "instruments"}
+
 var exchange = &internal.TheExchange
+var t *template.Template
 
 func StartWebServer(addr string) {
+	var err error
+	var paths []string
+
+	for _, file := range templates {
+		paths = append(paths, filepath.Join(templatePath, file+".html"))
+	}
+	t, err = template.ParseFiles(paths...)
+	if err != nil {
+		panic(err)
+	}
 	go func() {
 		http.HandleFunc("/instruments", instrumentsHandler)
 		http.HandleFunc("/sessions", sessionsHandler)
@@ -23,21 +36,18 @@ func StartWebServer(addr string) {
 }
 
 func welcomeHandler(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles(filepath.Join(templatePath, "welcome.html"))
-	t.Execute(w, empty{})
+	t.ExecuteTemplate(w, "welcome.html", empty{})
 }
 
 func sessionsHandler(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]string)
 	data["Sessions"] = exchange.ListSessions()
 
-	t, _ := template.ParseFiles(filepath.Join(templatePath, "sessions.html"))
-	t.Execute(w, data)
+	t.ExecuteTemplate(w, "sessions.html", data)
 }
 func instrumentsHandler(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["Symbols"] = common.IMap.AllSymbols()
 
-	t, _ := template.ParseFiles(filepath.Join(templatePath, "instruments.html"))
-	t.Execute(w, data)
+	t.ExecuteTemplate(w, "instruments.html", data)
 }
