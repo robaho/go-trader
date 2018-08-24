@@ -53,7 +53,7 @@ func main() {
 	fmt.Println("web server access available at :" + *port)
 
 	if *profile {
-		f, _ := os.Create("gox.pprof")
+		f, _ := os.Create("got.pprof")
 
 		runtime.SetBlockProfileRate(1)
 		pprof.StartCPUProfile(f)
