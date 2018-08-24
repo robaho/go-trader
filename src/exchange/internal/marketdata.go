@@ -118,7 +118,7 @@ func init() {
 
 	// read settings and create socket
 
-	props := NewProperties("gox_settings")
+	props := NewProperties("got_settings")
 	saddr := props.GetString("multicast_addr", "")
 	if saddr == "" {
 		panic("unable to read multicast addr")

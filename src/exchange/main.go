@@ -19,7 +19,7 @@ func main() {
 
 	runtime.GOMAXPROCS(8)
 
-	fix := flag.String("fix", "qf_gox_settings", "set the fix session file")
+	fix := flag.String("fix", "qf_got_settings", "set the fix session file")
 	port := flag.String("port", "8080", "set the web server port")
 
 	flag.Parse()
