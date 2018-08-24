@@ -44,7 +44,7 @@ func main() {
 		playback = "playback.txt"
 	}
 
-	var exchange = connector.NewConnector(&callback, *fileName)
+	var exchange = connector.NewConnector(&callback, *fileName, nil)
 
 	exchange.Connect()
 	if !exchange.IsConnected() {
