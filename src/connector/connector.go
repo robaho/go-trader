@@ -319,6 +319,7 @@ func (c *connector) packetReceived(expected uint64, buf []byte) uint64 {
 	if pn < expected {
 		// server restart, reset the packet numbers
 		expected = 0
+		lastSequence = make(map[Instrument]uint64)
 	}
 
 	if expected != 0 && pn != expected {
@@ -343,7 +344,11 @@ func (c *connector) processPacket(packet []byte) {
 
 	book, trades := protocol.DecodeMarketEvent(bytes.NewBuffer(packet))
 	if book != nil {
-		c.callback.OnBook(book)
+		last, ok := lastSequence[book.Instrument]
+		if (ok && book.Sequence > last) || !ok {
+			c.callback.OnBook(book)
+			lastSequence[book.Instrument] = book.Sequence
+		}
 	}
 	for _, trade := range trades {
 		c.callback.OnTrade(&trade)
