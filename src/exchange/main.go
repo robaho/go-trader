@@ -48,6 +48,8 @@ func main() {
 
 	var exchange = &internal.TheExchange
 
+	exchange.Start()
+
 	_ = acceptor.Start()
 	defer acceptor.Stop()
 
@@ -57,8 +59,6 @@ func main() {
 	if *profile {
 		runtime.SetBlockProfileRate(1)
 	}
-
-	internal.StartMarketData()
 
 	watching := sync.Map{}
 

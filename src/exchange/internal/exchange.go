@@ -252,3 +252,6 @@ func (e *exchange) SessionDisconnect(session string) {
 	}
 	fmt.Println("session", session, "disconnected, cancelled", orderCount, "orders", quoteCount, "quotes")
 }
+func (e *exchange) Start() {
+	startMarketData()
+}
