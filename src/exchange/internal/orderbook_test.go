@@ -70,7 +70,7 @@ func TestOrderBook(t *testing.T) {
 
 	fmt.Println("the order book is ", &ob)
 	b = ob.buildBook()
-	fmt.Println("the book is ", &b)
+	fmt.Println("the book is ", b)
 
 	if len(b.Bids) != 2 {
 		t.Error("incorrect bids", b.Bids, ob)
@@ -89,7 +89,7 @@ func TestOrderBook(t *testing.T) {
 
 	fmt.Println("the order book is ", &ob)
 	b = ob.buildBook()
-	fmt.Println("the book is ", &b)
+	fmt.Println("the book is ", b)
 
 	if len(b.Bids) != 1 {
 		t.Error("incorrect bids", b.Bids, &ob)
@@ -108,7 +108,7 @@ func TestOrderBook(t *testing.T) {
 
 	fmt.Println("the order book is ", &ob)
 	b = ob.buildBook()
-	fmt.Println("the book is ", &b)
+	fmt.Println("the book is ", b)
 
 	if len(b.Bids) != 1 {
 		t.Error("incorrect bids", b.Bids, &ob)
