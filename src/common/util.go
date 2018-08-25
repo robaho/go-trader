@@ -109,3 +109,12 @@ func DecodeTime(r io.ByteReader) time.Time {
 	ns, _ := ReadVarint(r)
 	return time.Unix(0, ns)
 }
+func CmpTime(t1 time.Time, t2 time.Time) int {
+	if t1.Equal(t2) {
+		return 0
+	} else if t1.Before(t2) {
+		return -1
+	} else {
+		return 1
+	}
+}

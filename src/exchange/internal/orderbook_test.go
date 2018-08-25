@@ -11,27 +11,6 @@ func TestWaitForKey(t *testing.T) {
 	//time.Sleep(20*time.Second)
 }
 
-func TestFindInsert(t *testing.T) {
-
-	var levels []orderLevel
-	levels, index := findLevel(levels, NewDecimal("100.0"), true, true)
-	if index != 0 {
-		t.Fail()
-	}
-	levels, index = findLevel(levels, NewDecimal("90.0"), true, true)
-	if index != 0 {
-		t.Fail()
-	}
-	levels, index = findLevel(levels, NewDecimal("110.0"), true, true)
-	if index != 2 {
-		t.Fail()
-	}
-	levels, index = findLevel(levels, NewDecimal("110.0"), true, true)
-	if index != 2 {
-		t.Fail()
-	}
-}
-
 func TestOrderBook(t *testing.T) {
 	// no need for locking here...
 	var ob = orderBook{}

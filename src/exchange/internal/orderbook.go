@@ -10,31 +10,11 @@ import (
 	"time"
 )
 
-type orderLevel struct {
-	price  decimal.Decimal
-	orders []sessionOrder
-}
-
-func (ol orderLevel) String() string {
-	var s = ol.price.String() + " @ ("
-	for i, v := range ol.orders {
-		if i > 0 {
-			s += ","
-		}
-		s += v.order.Quantity.String()
-	}
-	return s + ")"
-}
-
 type orderBook struct {
 	sync.Mutex
-	Instrument Instrument
-	bids       []orderLevel
-	asks       []orderLevel
-}
-
-func (ob *orderBook) String() string {
-	return fmt.Sprintf("bids %v, asks %v}", ob.bids, ob.asks)
+	Instrument
+	bids []sessionOrder
+	asks []sessionOrder
 }
 
 type trade struct {
@@ -49,17 +29,17 @@ type trade struct {
 	sellRemaining decimal.Decimal
 }
 
+func (ob *orderBook) String() string {
+	return fmt.Sprint("bids:", ob.bids, "asks:", ob.asks)
+}
+
 func (ob *orderBook) add(so sessionOrder) ([]trade, error) {
 	so.order.OrderState = Booked
 
 	if so.order.Side == Buy {
-		levels, index := findLevel(ob.bids, so.order.Price, false, true)
-		levels[index].orders = append(levels[index].orders, so)
-		ob.bids = levels
+		ob.bids = insertSort(ob.bids, so, 1)
 	} else {
-		levels, index := findLevel(ob.asks, so.order.Price, true, true)
-		levels[index].orders = append(levels[index].orders, so)
-		ob.asks = levels
+		ob.asks = insertSort(ob.asks, so, -1)
 	}
 
 	// match and build trades
@@ -68,21 +48,31 @@ func (ob *orderBook) add(so sessionOrder) ([]trade, error) {
 	return trades, nil
 }
 
+func insertSort(orders []sessionOrder, so sessionOrder, direction int) []sessionOrder {
+	index := sort.Search(len(orders), func(i int) bool {
+		cmp := so.order.Price.Cmp(orders[i].order.Price) * direction
+		if cmp == 0 {
+			cmp = CmpTime(so.time, orders[i].time)
+		}
+		return cmp >= 0
+	})
+	return append(append(orders[:index], so), orders[index:]...)
+}
+
 var nextTradeID int64 = 0
 
 func matchTrades(book *orderBook) []trade {
 	var trades []trade
 	var tradeID int64 = 0
 	var when = time.Now()
-	for len(book.bids) > 0 && len(book.asks) > 0 {
-		bidL := book.bids[0]
-		askL := book.asks[0]
 
-		if !bidL.price.GreaterThanOrEqual(askL.price) {
+	for len(book.bids) > 0 && len(book.asks) > 0 {
+		bid := book.bids[0]
+		ask := book.asks[0]
+
+		if !bid.order.Price.GreaterThanOrEqual(ask.order.Price) {
 			break
 		}
-		var bid = bidL.orders[0]
-		var ask = askL.orders[0]
 
 		var price decimal.Decimal
 		// need to use price of resting order
@@ -91,6 +81,7 @@ func matchTrades(book *orderBook) []trade {
 		} else {
 			price = ask.order.Price
 		}
+
 		var qty = decimal.Min(bid.order.Remaining, ask.order.Remaining)
 
 		var trade = trade{}
@@ -136,39 +127,26 @@ func fill(order *Order, qty decimal.Decimal, price decimal.Decimal) {
 
 func (ob *orderBook) remove(so sessionOrder) error {
 
-	var levels []orderLevel
-	var reverse bool
+	var removed bool
 
-	if so.order.Side == Buy {
-		levels = ob.bids
-		reverse = false
-	} else {
-		levels = ob.asks
-		reverse = true
-	}
-
-	_, index := findLevel(levels, so.order.Price, reverse, false)
-	if index == -1 {
-		return OrderNotFound
-	}
-	var newlevel []sessionOrder
-	// search and remove sessionOrder
-	for _, v := range levels[index].orders {
-		if v.order.ExchangeId != so.order.ExchangeId {
-			newlevel = append(newlevel, v)
+	removeFN := func(orders *[]sessionOrder, so sessionOrder) bool {
+		for i, v := range *orders {
+			if v == so {
+				*orders = append((*orders)[:i], (*orders)[i+1:]...)
+				return true
+			}
 		}
-	}
-	if len(newlevel) == 0 { // remove empty levels
-		levels = append(levels[:index], levels[index+1:]...)
-	} else {
-		levels[index].orders = newlevel
+		return false
 	}
 
 	if so.order.Side == Buy {
-		ob.bids = levels
-		reverse = false
+		removed = removeFN(&ob.bids, so)
 	} else {
-		ob.asks = levels
+		removed = removeFN(&ob.asks, so)
+	}
+
+	if !removed {
+		return OrderNotFound
 	}
 
 	if so.order.IsActive() {
@@ -188,38 +166,27 @@ func (ob *orderBook) buildBook() *Book {
 	return book
 }
 
-func createBookLevels(obLevels []orderLevel) (levels []BookLevel) {
-	for _, i := range obLevels {
-		var qty = ZERO
-		for _, j := range i.orders {
-			qty = qty.Add(j.order.Remaining)
-		}
-		var level = BookLevel{i.price, qty}
-		levels = append(levels, level)
-	}
-	return levels
-}
+func createBookLevels(orders []sessionOrder) []BookLevel {
+	var levels []BookLevel
 
-func findLevel(data []orderLevel, price decimal.Decimal, reverse bool, insert bool) ([]orderLevel, int) {
-	f := func(i int) bool {
-		if reverse {
-			return data[i].price.GreaterThanOrEqual(price)
+	if len(orders) == 0 {
+		return levels
+	}
+
+	price := orders[0].order.Price
+	quantity := decimal.Zero
+
+	for _, v := range orders {
+		if v.order.Price.Equals(price) {
+			quantity = quantity.Add(v.order.Remaining)
 		} else {
-			return data[i].price.LessThanOrEqual(price)
+			bl := BookLevel{Price: price, Quantity: quantity}
+			levels = append(levels, bl)
+			price = v.order.Price
+			quantity = v.order.Remaining
 		}
 	}
-	index := sort.Search(len(data), f)
-	if index < len(data) && data[index].price.Equals(price) {
-		return data, index
-	}
-	// level was not found...
-	if !insert {
-		return data, -1
-	}
-	ol := orderLevel{}
-	ol.price = price
-	data = append(data, ol)
-	copy(data[index+1:], data[index:])
-	data[index] = ol
-	return data, index
+	bl := BookLevel{Price: price, Quantity: quantity}
+	levels = append(levels, bl)
+	return levels
 }

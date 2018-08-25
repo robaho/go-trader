@@ -23,7 +23,7 @@ type sessionOrder struct {
 	time    time.Time
 }
 
-func (so *sessionOrder) String() string {
+func (so sessionOrder) String() string {
 	return fmt.Sprint(so.session, so.order)
 }
 
