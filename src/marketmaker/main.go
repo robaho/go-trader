@@ -15,13 +15,13 @@ import (
 )
 
 type MyCallback struct {
-	sync.WaitGroup
+	cond   *sync.Cond
 	symbol string
 }
 
 func (cb *MyCallback) OnBook(book *Book) {
 	if book.Instrument.Symbol() == cb.symbol {
-		cb.Done()
+		cb.cond.Signal()
 	}
 }
 
@@ -41,6 +41,7 @@ func (*MyCallback) OnTrade(trade *Trade) {
 
 func main() {
 	var callback = MyCallback{}
+	callback.cond = sync.NewCond(&sync.Mutex{})
 
 	symbol := flag.String("symbol", "IBM", "set the symbol")
 	fix := flag.String("fix", "qf_mm1_settings", "set the fix session file")
@@ -99,13 +100,14 @@ func main() {
 			}
 		}
 
-		callback.Add(1)
 		now := time.Now()
 		err := exchange.Quote(instrument, bidPrice, bidQty, askPrice, askQty)
 		if err != nil {
 			fmt.Println("unable to submit quote: " + err.Error())
 		}
-		callback.Wait()
+		callback.cond.L.Lock()
+		callback.cond.Wait()
+		callback.cond.L.Unlock()
 		h.Add(float64(time.Now().Sub(now).Nanoseconds()))
 		if *delay != 0 {
 			time.Sleep(time.Duration(int64(*delay)) * time.Millisecond)
