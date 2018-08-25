@@ -131,7 +131,7 @@ func (ob *orderBook) remove(so sessionOrder) error {
 
 	removeFN := func(orders *[]sessionOrder, so sessionOrder) bool {
 		for i, v := range *orders {
-			if v == so {
+			if v.order == so.order {
 				*orders = append((*orders)[:i], (*orders)[i+1:]...)
 				return true
 			}
