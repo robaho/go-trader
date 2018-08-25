@@ -27,14 +27,14 @@ func (app *myApplication) OnCreate(sessionID quickfix.SessionID) {
 
 func (app *myApplication) OnLogon(sessionID quickfix.SessionID) {
 	if sessionID == app.c.sessionID {
-		fmt.Println("we are logged in!")
+		fmt.Fprintln(app.c.log, "we are logged in!")
 		app.c.loggedIn.SetTrue()
 	}
 }
 
 func (app *myApplication) OnLogout(sessionID quickfix.SessionID) {
 	if sessionID == app.c.sessionID {
-		fmt.Println("we are logged out!")
+		fmt.Fprintln(app.c.log, "we are logged out!")
 		app.c.loggedIn.SetFalse()
 	}
 }
