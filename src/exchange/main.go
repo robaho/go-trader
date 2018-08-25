@@ -48,6 +48,7 @@ func main() {
 	var exchange = internal.TheExchange
 
 	_ = acceptor.Start()
+	defer acceptor.Stop()
 
 	web.StartWebServer(":" + *port)
 	fmt.Println("web server access available at :" + *port)
@@ -57,6 +58,8 @@ func main() {
 
 		runtime.SetBlockProfileRate(1)
 		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+
 	}
 
 	watching := sync.Map{}
@@ -111,10 +114,4 @@ func main() {
 	again:
 		fmt.Print("Command?")
 	}
-
-	if *profile {
-		pprof.StopCPUProfile()
-	}
-
-	acceptor.Stop()
 }
