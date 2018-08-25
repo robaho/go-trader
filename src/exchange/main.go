@@ -58,6 +58,8 @@ func main() {
 		runtime.SetBlockProfileRate(1)
 	}
 
+	internal.StartMarketData()
+
 	watching := sync.Map{}
 
 	fmt.Println("use 'help' to get a list of commands")

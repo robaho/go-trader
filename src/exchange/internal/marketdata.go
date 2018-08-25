@@ -112,7 +112,7 @@ func sendPacket(data []byte) {
 	rememberPacket(packetNumber, data)
 }
 
-func init() {
+func StartMarketData() {
 	eventChannel = make(chan MarketEvent)
 	lastSentBook = make(map[Instrument]uint64)
 
