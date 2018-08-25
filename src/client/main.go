@@ -265,7 +265,7 @@ func processCommand(g *gocui.Gui, v *gocui.View) error {
 		goto again
 	}
 	if "help" == parts[0] {
-		fmt.Fprintln(v, "The available commands are: quit, {buy:sell} SYMBOL QTY PRICE, modify ORDERID QTY PRICE, cancel ORDERID")
+		fmt.Fprintln(v, "The available commands are: quit, {buy:sell} SYMBOL QTY PRICE, modify ORDERID QTY PRICE, cancel ORDERID, book SYMBOL")
 	} else if "quit" == parts[0] {
 		return gocui.ErrQuit
 	} else if ("buy" == parts[0] || "sell" == parts[0]) && len(parts) == 4 {
