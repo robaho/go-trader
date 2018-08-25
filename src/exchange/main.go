@@ -46,7 +46,7 @@ func main() {
 		panic(err)
 	}
 
-	var exchange = internal.TheExchange
+	var exchange = &internal.TheExchange
 
 	_ = acceptor.Start()
 	defer acceptor.Stop()
