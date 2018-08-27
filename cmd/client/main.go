@@ -1,14 +1,15 @@
 package main
 
 import (
-	. "common"
-	"connector"
 	"flag"
 	"fmt"
-	"github.com/robaho/gocui"
 	"log"
 	"strings"
 	"sync"
+
+	. "github.com/robaho/go-trader/pkg/common"
+	"github.com/robaho/go-trader/pkg/connector"
+	"github.com/robaho/gocui"
 )
 
 var gui *gocui.Gui

@@ -1,15 +1,16 @@
-package internal
+package exchange
 
 import (
-	. "common"
 	"fmt"
-	"github.com/quickfixgo/enum"
-	"github.com/shopspring/decimal"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/quickfixgo/enum"
+	. "github.com/robaho/go-trader/pkg/common"
+	"github.com/shopspring/decimal"
 )
 
 type quotePair struct {

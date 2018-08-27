@@ -2,17 +2,17 @@ package main
 
 import (
 	"bufio"
-	"common"
-	"exchange/internal"
-	"exchange/web"
 	"flag"
 	"fmt"
-	"github.com/quickfixgo/quickfix"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/quickfixgo/quickfix"
+	"github.com/robaho/go-trader/internal/exchange"
+	"github.com/robaho/go-trader/pkg/common"
 )
 
 import _ "net/http/pprof"
@@ -21,13 +21,16 @@ func main() {
 
 	runtime.GOMAXPROCS(8)
 
-	fix := flag.String("fix", "qf_got_settings", "set the fix session file")
+	fix := flag.String("fix", "configs/qf_got_settings", "set the fix session file")
 	port := flag.String("port", "8080", "set the web server port")
 	profile := flag.Bool("profile", false, "create CPU profiling output")
 
 	flag.Parse()
 
-	cfg, _ := os.Open(*fix)
+	cfg, err := os.Open(*fix)
+	if err != nil {
+		panic(err)
+	}
 	appSettings, err := quickfix.ParseSettings(cfg)
 	if err != nil {
 		panic(err)
@@ -41,19 +44,19 @@ func main() {
 	} else {
 		logFactory = quickfix.NewNullLogFactory()
 	}
-	acceptor, err := quickfix.NewAcceptor(&internal.App, storeFactory, appSettings, logFactory)
+	acceptor, err := quickfix.NewAcceptor(&exchange.App, storeFactory, appSettings, logFactory)
 	if err != nil {
 		panic(err)
 	}
 
-	var exchange = &internal.TheExchange
+	var ex = &exchange.TheExchange
 
-	exchange.Start()
+	ex.Start()
 
 	_ = acceptor.Start()
 	defer acceptor.Stop()
 
-	web.StartWebServer(":" + *port)
+	exchange.StartWebServer(":" + *port)
 	fmt.Println("web server access available at :" + *port)
 
 	if *profile {
@@ -78,9 +81,9 @@ func main() {
 		} else if "quit" == parts[0] {
 			break
 		} else if "sessions" == parts[0] {
-			fmt.Println("Active sessions: ", exchange.ListSessions())
+			fmt.Println("Active sessions: ", ex.ListSessions())
 		} else if "book" == parts[0] {
-			book := internal.GetBook(parts[1])
+			book := exchange.GetBook(parts[1])
 			if book != nil {
 				fmt.Println(book)
 			}
@@ -93,7 +96,7 @@ func main() {
 					if _, ok := watching.Load(symbol); !ok {
 						break
 					}
-					book := internal.GetBook(symbol)
+					book := exchange.GetBook(symbol)
 					if book != nil {
 						if lastBook != book {
 							fmt.Println(book)

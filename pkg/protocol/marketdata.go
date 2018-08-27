@@ -2,7 +2,7 @@ package protocol
 
 import (
 	"bytes"
-	. "common"
+	. "github.com/robaho/go-trader/pkg/common"
 	"io"
 )
 

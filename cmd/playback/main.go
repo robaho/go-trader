@@ -2,8 +2,6 @@ package main
 
 import (
 	"bufio"
-	. "common"
-	"connector"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	. "github.com/robaho/go-trader/pkg/common"
+	"github.com/robaho/go-trader/pkg/connector"
 )
 
 type MyCallback struct {
@@ -34,7 +35,7 @@ func (*MyCallback) OnTrade(trade *Trade) {
 func main() {
 	var callback = MyCallback{}
 
-	fix := flag.String("fix", "qf_playback_settings", "set the fix session file")
+	fix := flag.String("fix", "configs/qf_playback_settings", "set the fix session file")
 	speed := flag.Float64("speed", 1.0, "set the playback speed")
 	playback := flag.String("file", "playback.txt", "set the playback file")
 

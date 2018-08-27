@@ -1,19 +1,18 @@
-package web
+package exchange
 
 import (
-	"common"
-	"exchange/internal"
 	"html/template"
 	"net/http"
 	"path/filepath"
+
+	"github.com/robaho/go-trader/pkg/common"
 )
 
 type empty struct{}
 
-var templatePath = "../src/exchange/web/html/"
+var templatePath = "web/templates/"
 var templates = []string{"welcome", "sessions", "instruments"}
 
-var exchange = &internal.TheExchange
 var t *template.Template
 
 func StartWebServer(addr string) {
@@ -41,7 +40,7 @@ func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 
 func sessionsHandler(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]string)
-	data["Sessions"] = exchange.ListSessions()
+	data["Sessions"] = TheExchange.ListSessions()
 
 	t.ExecuteTemplate(w, "sessions.html", data)
 }

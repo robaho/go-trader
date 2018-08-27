@@ -1,12 +1,13 @@
 package connector
 
 import (
-	. "common"
 	"fmt"
+	"strings"
+
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/fix44/executionreport"
 	"github.com/quickfixgo/quickfix"
-	"strings"
+	. "github.com/robaho/go-trader/pkg/common"
 )
 
 type myApplication struct {

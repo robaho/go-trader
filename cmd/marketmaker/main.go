@@ -1,17 +1,18 @@
 package main
 
 import (
-	. "common"
-	"connector"
 	"flag"
 	"fmt"
-	"github.com/VividCortex/gohistogram"
-	"github.com/shopspring/decimal"
 	"log"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/VividCortex/gohistogram"
+	. "github.com/robaho/go-trader/pkg/common"
+	"github.com/robaho/go-trader/pkg/connector"
+	"github.com/shopspring/decimal"
 )
 
 type MyCallback struct {
@@ -44,7 +45,7 @@ func main() {
 	callback.cond = sync.NewCond(&sync.Mutex{})
 
 	symbol := flag.String("symbol", "IBM", "set the symbol")
-	fix := flag.String("fix", "qf_mm1_settings", "set the fix session file")
+	fix := flag.String("fix", "configs/qf_mm1_settings", "set the fix session file")
 	delay := flag.Int("delay", 0, "set the delay in ms after each quote, 0 to disable")
 
 	flag.Parse()

@@ -1,10 +1,11 @@
-package internal
+package exchange
 
 import (
-	. "common"
 	"fmt"
 	"testing"
 	"time"
+
+	. "github.com/robaho/go-trader/pkg/common"
 )
 
 func TestWaitForKey(t *testing.T) {

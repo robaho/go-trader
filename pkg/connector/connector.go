@@ -1,14 +1,16 @@
 package connector
 
 import (
-	. "common"
-	"exchange/protocol"
-)
-
-import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
+	"log"
+	"net"
+	"os"
+	"sync"
+	"time"
+
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
 	"github.com/quickfixgo/fix44/massquote"
@@ -16,13 +18,9 @@ import (
 	"github.com/quickfixgo/fix44/ordercancelreplacerequest"
 	"github.com/quickfixgo/fix44/ordercancelrequest"
 	"github.com/quickfixgo/quickfix"
+	. "github.com/robaho/go-trader/pkg/common"
+	"github.com/robaho/go-trader/pkg/protocol"
 	"github.com/shopspring/decimal"
-	"io"
-	"log"
-	"net"
-	"os"
-	"sync"
-	"time"
 )
 
 type connector struct {
@@ -233,7 +231,10 @@ func NewConnector(callback ConnectorCallback, filename string, logOutput io.Writ
 
 	// read settings and create socket
 
-	props := NewProperties("got_settings")
+	props, err := NewProperties("configs/got_settings")
+	if err != nil {
+		panic(err)
+	}
 	saddr := props.GetString("multicast_addr", "")
 	if saddr == "" {
 		panic("unable to read multicast addr")

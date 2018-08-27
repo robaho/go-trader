@@ -3,7 +3,7 @@ package protocol
 import "testing"
 import (
 	"bytes"
-	. "common"
+	. "github.com/robaho/go-trader/pkg/common"
 	"reflect"
 )
 

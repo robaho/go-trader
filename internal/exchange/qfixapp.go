@@ -1,8 +1,9 @@
-package internal
+package exchange
 
 import (
-	. "common"
 	"fmt"
+	"sync"
+
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
 	"github.com/quickfixgo/fix44/executionreport"
@@ -11,8 +12,8 @@ import (
 	"github.com/quickfixgo/fix44/ordercancelreplacerequest"
 	"github.com/quickfixgo/fix44/ordercancelrequest"
 	"github.com/quickfixgo/quickfix"
+	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/shopspring/decimal"
-	"sync"
 )
 
 var App myApplication

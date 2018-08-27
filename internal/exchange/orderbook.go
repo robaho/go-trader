@@ -1,13 +1,14 @@
-package internal
+package exchange
 
 import "sync"
 import (
-	. "common"
 	"fmt"
-	"github.com/shopspring/decimal"
 	"sort"
 	"sync/atomic"
 	"time"
+
+	. "github.com/robaho/go-trader/pkg/common"
+	"github.com/shopspring/decimal"
 )
 
 type orderBook struct {

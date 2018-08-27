@@ -1,17 +1,18 @@
-package internal
+package exchange
 
 import (
 	"bytes"
-	. "common"
 	"container/list"
 	"encoding/binary"
-	"exchange/protocol"
 	"fmt"
 	"log"
 	"net"
 	"strconv"
 	"sync"
 	"sync/atomic"
+
+	. "github.com/robaho/go-trader/pkg/common"
+	"github.com/robaho/go-trader/pkg/protocol"
 )
 
 // market data caches the latest books, and publishes books and exchange trades via multicast
@@ -118,7 +119,10 @@ func startMarketData() {
 
 	// read settings and create socket
 
-	props := NewProperties("got_settings")
+	props, err := NewProperties("configs/got_settings")
+	if err != nil {
+		panic("unable to read multicast addr")
+	}
 	saddr := props.GetString("multicast_addr", "")
 	if saddr == "" {
 		panic("unable to read multicast addr")

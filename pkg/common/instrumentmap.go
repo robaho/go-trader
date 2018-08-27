@@ -65,7 +65,7 @@ func init() {
 	IMap.bySymbol = make(map[string]Instrument)
 	IMap.byID = make(map[int64]Instrument)
 
-	inputFile, err := os.Open("instruments.txt")
+	inputFile, err := os.Open("configs/instruments.txt")
 	if err != nil {
 		return
 	}
