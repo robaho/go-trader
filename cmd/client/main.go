@@ -328,7 +328,7 @@ again:
 func main() {
 	var callback = MyCallback{}
 
-	fix := flag.String("fix", "qf_playback_settings", "set the fix session file")
+	fix := flag.String("fix", "configs/qf_client_settings", "set the fix session file")
 
 	flag.Parse()
 

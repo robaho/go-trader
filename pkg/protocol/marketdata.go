@@ -10,7 +10,9 @@ import (
 // currently it all needs to fit in a single packet or it won't work, although straightforward to send additional trade packets
 
 func EncodeMarketEvent(book *Book, trades []Trade) []byte {
+
 	buf := new(bytes.Buffer)
+	PutVarint(buf, book.Instrument.ID())
 	if book != nil {
 		buf.WriteByte(1) // has book
 		buf.Write(encodeBook(book))
@@ -22,19 +24,21 @@ func EncodeMarketEvent(book *Book, trades []Trade) []byte {
 }
 
 func DecodeMarketEvent(r io.ByteReader) (*Book, []Trade) {
+	instrumentId, _ := ReadVarint(r)
+	instrument := IMap.GetByID(instrumentId)
+
 	hasBook, _ := r.ReadByte()
 	var book *Book
 	if hasBook == 1 {
-		book = decodeBook(r)
+		book = decodeBook(r, instrument)
 	}
-	trades := decodeTrades(r)
+	trades := decodeTrades(r, instrument)
 	return book, trades
 }
 
 func encodeBook(book *Book) []byte {
 	buf := new(bytes.Buffer)
 
-	PutVarint(buf, book.Instrument.ID())
 	PutUvarint(buf, book.Sequence)
 
 	encodeLevels(buf, book.Bids)
@@ -43,13 +47,10 @@ func encodeBook(book *Book) []byte {
 	return buf.Bytes()
 }
 
-func decodeBook(r io.ByteReader) *Book {
+func decodeBook(r io.ByteReader, instrument Instrument) *Book {
 	book := new(Book)
 
-	instrumentId, _ := ReadVarint(r)
 	sequence, _ := ReadUvarint(r)
-
-	instrument := IMap.GetByID(instrumentId)
 
 	book.Instrument = instrument
 	book.Sequence = sequence
@@ -85,7 +86,6 @@ func encodeTrades(trades []Trade) []byte {
 
 	buf.WriteByte(byte(len(trades)))
 	for _, v := range trades {
-		PutVarint(buf, v.Instrument.ID())
 		EncodeDecimal(buf, v.Quantity)
 		EncodeDecimal(buf, v.Price)
 		EncodeString(buf, v.ExchangeID)
@@ -95,13 +95,10 @@ func encodeTrades(trades []Trade) []byte {
 	return buf.Bytes()
 }
 
-func decodeTrades(r io.ByteReader) []Trade {
+func decodeTrades(r io.ByteReader, instrument Instrument) []Trade {
 	n, _ := r.ReadByte() // read length
 	trades := make([]Trade, n)
 	for i := 0; i < int(n); i++ {
-		instrumentId, _ := ReadVarint(r)
-		instrument := IMap.GetByID(instrumentId)
-
 		qty := DecodeDecimal(r)
 		price := DecodeDecimal(r)
 		exchangeID := DecodeString(r)
