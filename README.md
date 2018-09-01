@@ -12,31 +12,27 @@ It was primarly developed to further my knowledge of Go and test its suitability
 
 # install
 
-git clone git://github.com/robaho/go-trader
+go get github.com/robaho/go-trader
 
 # build
 
-cd go-trader
+go install github.com/robaho/go-trader/cmd/exchange
 
-export GOPATH=$GOPATH:~/go-trader
+go install github.com/robaho/go-trader/cmd/client
 
-go install exchange
+go install github.com/robaho/go-trader/cmd/marketmaker
 
-go install client
-
-go install marketmaker
-
-go install playback
+go install github.com/robaho/go-trader/cmd/playback
 
 # run
 
-cd bin
+cd $GOPATH/src/github.com/robaho/go-trader/cmd
 
-./exchange &
+exchange &
 
-./marketmaker -symbol IBM
+marketmaker -symbol IBM
 
-./client
+client
 
 # planned TODOs
 
