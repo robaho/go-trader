@@ -19,7 +19,7 @@ func TestEncodeDecodeBook(t *testing.T) {
 	buf := new(bytes.Buffer)
 	buf.Write(encodeBook(&book))
 
-	book2 := decodeVook(buf)
+	book2 := decodeBook(buf)
 
 	if !reflect.DeepEqual(book, *book2) {
 		t.Error("books do not match", &book, book2)

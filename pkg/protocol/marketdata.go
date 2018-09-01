@@ -25,7 +25,7 @@ func DecodeMarketEvent(r io.ByteReader) (*Book, []Trade) {
 	hasBook, _ := r.ReadByte()
 	var book *Book
 	if hasBook == 1 {
-		book = decodeVook(r)
+		book = decodeBook(r)
 	}
 	trades := decodeTrades(r)
 	return book, trades
@@ -43,7 +43,7 @@ func encodeBook(book *Book) []byte {
 	return buf.Bytes()
 }
 
-func decodeVook(r io.ByteReader) *Book {
+func decodeBook(r io.ByteReader) *Book {
 	book := new(Book)
 
 	instrumentId, _ := ReadVarint(r)
