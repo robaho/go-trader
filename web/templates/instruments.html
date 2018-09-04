@@ -7,7 +7,12 @@
 <body>
 Welcome to the GOT web interface...<br>
 {{range .Symbols}}
-    <a href="/symbol/{{.}}">{{.}}</a><br>
+    <a href="" onclick="showBook('{{.}}')">{{.}}</a><br>
 {{end}}
 </body>
+<script>
+    function showBook(symbol) {
+        window.open("/book?symbol="+symbol,"height=400,width=600");
+    }
+</script>
 </html>

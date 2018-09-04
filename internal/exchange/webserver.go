@@ -1,52 +1,101 @@
 package exchange
 
 import (
-	"html/template"
-	"net/http"
-	"path/filepath"
-
+	"bufio"
+	"encoding/json"
+	"github.com/gernest/hot"
 	"github.com/robaho/go-trader/pkg/common"
+	"golang.org/x/net/websocket"
+	"net/http"
 )
 
 type empty struct{}
 
 var templatePath = "web/templates/"
-var templates = []string{"welcome", "sessions", "instruments"}
 
-var t *template.Template
+var t *hot.Template
 
 func StartWebServer(addr string) {
 	var err error
-	var paths []string
 
-	for _, file := range templates {
-		paths = append(paths, filepath.Join(templatePath, file+".html"))
+	config := &hot.Config{
+		Watch:          true,
+		BaseName:       "hot",
+		Dir:            templatePath,
+		FilesExtension: []string{".html"},
 	}
-	t, err = template.ParseFiles(paths...)
+
+	tpl, err := hot.New(config)
 	if err != nil {
 		panic(err)
 	}
+	t = tpl
+
 	go func() {
+		http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("web/assets/js"))))
+		http.HandleFunc("/book", bookHandler)
 		http.HandleFunc("/instruments", instrumentsHandler)
 		http.HandleFunc("/sessions", sessionsHandler)
-		http.HandleFunc("/", welcomeHandler)
+		http.HandleFunc("/hello", welcomeHandler)
 		http.ListenAndServe(addr, nil)
+	}()
+
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/", websocket.Handler(BookServer))
+		err := http.ListenAndServe(":6502", mux)
+		if err != nil {
+			panic("ListenAndServe: " + err.Error())
+		}
 	}()
 }
 
+type BookRequest struct {
+	Symbol string `json: symbol`
+}
+
+func BookServer(ws *websocket.Conn) {
+	r := bufio.NewReader(ws)
+
+	request := BookRequest{}
+
+	decoder := json.NewDecoder(r)
+	decoder.Decode(&request)
+
+	w := json.NewEncoder(ws)
+
+	book := GetBook(request.Symbol)
+	if book == nil {
+		book = &common.Book{}
+	}
+
+	w.Encode(book)
+}
+
 func welcomeHandler(w http.ResponseWriter, r *http.Request) {
-	t.ExecuteTemplate(w, "welcome.html", empty{})
+	t.Execute(w, "welcome.html", empty{})
 }
 
 func sessionsHandler(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]string)
 	data["Sessions"] = TheExchange.ListSessions()
 
-	t.ExecuteTemplate(w, "sessions.html", data)
+	t.Execute(w, "sessions.html", data)
 }
+
 func instrumentsHandler(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["Symbols"] = common.IMap.AllSymbols()
 
-	t.ExecuteTemplate(w, "instruments.html", data)
+	t.Execute(w, "instruments.html", data)
+}
+
+func bookHandler(w http.ResponseWriter, r *http.Request) {
+	queryValues := r.URL.Query()
+
+	symbol := queryValues.Get("symbol")
+	data := make(map[string]interface{})
+	data["symbol"] = symbol
+
+	t.Execute(w, "book.html", data)
 }
