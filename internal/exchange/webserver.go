@@ -30,7 +30,7 @@ func StartWebServer(addr string) {
 	t = tpl
 
 	go func() {
-		http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("web/assets/js"))))
+		http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("web/assets"))))
 		http.HandleFunc("/book", bookHandler)
 		http.HandleFunc("/instruments", instrumentsHandler)
 		http.HandleFunc("/sessions", sessionsHandler)

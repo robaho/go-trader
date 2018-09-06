@@ -1,0 +1,34 @@
+.bid {
+    color: chartreuse;
+    text-align: left;
+}
+.ask {
+    color: crimson;
+    text-align: right;
+}
+div.book {
+    background-color: black;
+    height: 100%;
+    font-size: large;
+}
+table.book {
+    padding: 0 0 0 0;
+}
+.askqty {
+    width: 30%;
+    text-align: right;
+}
+.bidqty {
+    width: 30%;
+    text-align: right;
+}
+.price {
+    width: 40%;
+    text-align: right;
+    background-color: rgba(170, 170, 170, 0.39);
+}
+body {
+    background-color: black;
+    color: white;
+}
+

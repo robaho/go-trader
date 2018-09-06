@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>GOT Book : {{.symbol}}</title>
+    <link rel="stylesheet" type="text/css" href="/assets/css/book.css">
     <script>
         var symbol ={{.symbol}}
     </script>
-    <script language="JavaScript" src="/js/book.js"></script>
+    <script language="JavaScript" src="/assets/js/book.js"></script>
 </head>
 <body onload="connect()">
 Order Book : <b>{{.symbol}}</b><br><hr>
-The book is <p id="book"></p>
+<div id="book" class="book"></div>
 <script>
     window.setInterval(send,500);
 </script>
