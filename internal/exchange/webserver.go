@@ -1,8 +1,6 @@
 package exchange
 
 import (
-	"bufio"
-	"encoding/json"
 	"github.com/gernest/hot"
 	"github.com/robaho/go-trader/pkg/common"
 	"golang.org/x/net/websocket"
@@ -36,7 +34,7 @@ func StartWebServer(addr string) {
 		http.HandleFunc("/book", bookHandler)
 		http.HandleFunc("/instruments", instrumentsHandler)
 		http.HandleFunc("/sessions", sessionsHandler)
-		http.HandleFunc("/hello", welcomeHandler)
+		http.HandleFunc("/", welcomeHandler)
 		http.ListenAndServe(addr, nil)
 	}()
 
@@ -51,25 +49,31 @@ func StartWebServer(addr string) {
 }
 
 type BookRequest struct {
-	Symbol string `json: symbol`
+	Symbol   string
+	Sequence uint64
 }
 
 func BookServer(ws *websocket.Conn) {
-	r := bufio.NewReader(ws)
+	for {
+		request := BookRequest{}
 
-	request := BookRequest{}
+		if websocket.JSON.Receive(ws, &request) != nil {
+			break
+		}
 
-	decoder := json.NewDecoder(r)
-	decoder.Decode(&request)
+		book := GetBook(request.Symbol)
+		if book == nil {
+			book = &common.Book{}
+		}
 
-	w := json.NewEncoder(ws)
+		if request.Sequence >= book.Sequence { // book hasn't changed
+			continue // ignore
+		}
 
-	book := GetBook(request.Symbol)
-	if book == nil {
-		book = &common.Book{}
+		if websocket.JSON.Send(ws, book) != nil {
+			break
+		}
 	}
-
-	w.Encode(book)
 }
 
 func welcomeHandler(w http.ResponseWriter, r *http.Request) {

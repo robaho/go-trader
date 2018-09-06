@@ -2,11 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GOT Exchange Web Interface</title>
+    <title>GOT Book : {{.symbol}}</title>
+    <script>
+        var symbol ={{.symbol}}
+    </script>
     <script language="JavaScript" src="/js/book.js"></script>
 </head>
 <body onload="connect()">
-Welcome to the GOT web interface...<br>
-The selected symbol is <p id="symbol">{{.symbol}}</p><br>
+Order Book : <b>{{.symbol}}</b><br><hr>
 The book is <p id="book"></p>
+<script>
+    window.setInterval(send,500);
+</script>
 </html>
