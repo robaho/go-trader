@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/shopspring/decimal"
 	"log"
 	"strings"
 	"sync"
@@ -21,20 +22,14 @@ var trackingBook Instrument
 type MyCallback struct {
 }
 
-func max(a, b int) int {
-	if a < b {
-		return b
-	}
-	return a
-}
 func (MyCallback) OnBook(book *Book) {
 	bidPrice, bidQty, askPrice, askQty := "", "", "", ""
 	if book.HasBids() {
-		bidPrice = book.Bids[0].Price.String()
+		bidPrice = book.Bids[0].Price.StringFixed(2)
 		bidQty = book.Bids[0].Quantity.String()
 	}
 	if book.HasAsks() {
-		askPrice = book.Asks[0].Price.String()
+		askPrice = book.Asks[0].Price.StringFixed(2)
 		askQty = book.Asks[0].Quantity.String()
 	}
 
@@ -44,33 +39,37 @@ func (MyCallback) OnBook(book *Book) {
 		gui.Update(func(g *gocui.Gui) error {
 			v, _ := g.View("book")
 			v.Clear()
-			fmt.Fprintf(v, "%-18s | %18s", "Bids", "Asks\n")
-			fmt.Fprintf(v, "%-18s | %18s", "====", "====\n")
-			for i := 0; i < max(len(book.Bids), len(book.Asks)); i++ {
-				var bid, ask string
-				if i < len(book.Bids) {
-					bid = fmt.Sprintf("%5s @ %10s", book.Bids[i].Quantity.String(), book.Bids[i].Price.String())
-				}
-				if i < len(book.Asks) {
-					ask = fmt.Sprintf("%5s @ %10s", book.Asks[i].Quantity.String(), book.Asks[i].Price.String())
-				}
-				fmt.Fprintf(v, "%18s | %18s\n", bid, ask)
+			v.FgColor = gocui.ColorRed
+			for i := len(book.Asks) - 1; i >= 0; i-- {
+				fmt.Fprintf(v, "%5s @ %10s\n", book.Asks[i].Quantity.String(), book.Asks[i].Price.StringFixed(2))
 			}
+			v.FgColor = gocui.ColorGreen
+			for i := 0; i < len(book.Bids); i++ {
+				fmt.Fprintf(v, "%5s @ %10s\n", book.Bids[i].Quantity.String(), book.Bids[i].Price.StringFixed(2))
+			}
+			v.FgColor = gocui.ColorDefault
 			return nil
 		})
 	}
 }
 
 func vlogf(view string, format string, a ...interface{}) {
+	vlogcf(view, gocui.ColorDefault, format, a...)
+}
+
+func vlogcf(view string, color gocui.Attribute, format string, a ...interface{}) {
 	gui.Update(func(g *gocui.Gui) error {
 		v, err := g.View(view)
 		if err != nil {
 			return err
 		}
+		v.FgColor = color
 		_, err = fmt.Fprintf(v, format, a...)
+		v.FgColor = gocui.ColorDefault
 		return err
 	})
 }
+
 func vlogln(view string, a ...interface{}) {
 	gui.Update(func(g *gocui.Gui) error {
 		v, err := g.View(view)
@@ -106,7 +105,18 @@ func (MyCallback) OnOrderStatus(order *Order) {
 		activeOrderLock.Lock()
 		defer activeOrderLock.Unlock()
 		for _, order := range activeOrders {
-			fmt.Fprintf(v, "%5d %10s %5s %5s @ %10s\n", order.Id, order.Instrument.Symbol(), order.Side, order.Remaining.String(), order.Price.String())
+			color := gocui.ColorGreen
+			if order.Side == Sell {
+				color = gocui.ColorRed
+			}
+			v.FgColor = color
+
+			qty := order.Remaining.String()
+			if !order.Remaining.Equals(order.Quantity) {
+				qty = qty + " (" + order.Quantity.String() + ")"
+			}
+			fmt.Fprintf(v, "%5d %10s %5s %10s @ %10s\n", order.Id, order.Instrument.Symbol(), order.Side, qty, order.Price.StringFixed(2))
+			v.FgColor = gocui.ColorDefault
 		}
 		return err
 	})
@@ -114,15 +124,35 @@ func (MyCallback) OnOrderStatus(order *Order) {
 }
 
 func (MyCallback) OnFill(fill *Fill) {
+	color := gocui.ColorGreen
+	if fill.Side == Sell {
+		color = gocui.ColorRed
+	}
 	if fill.IsQuote {
-		vlogf("fills", "quote fill on %s, %s %s @ %s\n", fill.Instrument.Symbol(), fill.Side, fill.Quantity.String(), fill.Price.String())
+		vlogcf("fills", color, "quote fill on %s, %s %s @ %s\n", fill.Instrument.Symbol(), fill.Side, fill.Quantity.String(), fill.Price.StringFixed(2))
 	} else {
-		vlogf("fills", "order %d fill on %s, %s %s @ %s\n", fill.Order.Id, fill.Instrument.Symbol(), fill.Side, fill.Quantity.String(), fill.Price.String())
+		vlogcf("fills", color, "order %d fill on %s, %s %s @ %s\n", fill.Order.Id, fill.Instrument.Symbol(), fill.Side, fill.Quantity.String(), fill.Price.StringFixed(2))
 	}
 }
 
+var lastPrice = map[Instrument]decimal.Decimal{}
+
 func (MyCallback) OnTrade(trade *Trade) {
-	vlogf("markets", "trade on %s, %s @ %s\n", trade.Instrument.Symbol(), trade.Quantity.String(), trade.Price.String())
+	color := gocui.ColorWhite
+
+	lp, ok := lastPrice[trade.Instrument]
+	if ok {
+		if trade.Price.Equals(lp) {
+			color = gocui.ColorWhite
+		} else if trade.Price.GreaterThan(lp) {
+			color = gocui.ColorGreen
+		} else {
+			color = gocui.ColorRed
+		}
+	}
+	lastPrice[trade.Instrument] = trade.Price
+
+	vlogcf("markets", color, "trade on %s, %s @ %s\n", trade.Instrument.Symbol(), trade.Quantity.String(), trade.Price.StringFixed(2))
 }
 
 type viewLogger struct{}
@@ -217,7 +247,7 @@ func layout(g *gocui.Gui) error {
 		v.Wrap = true
 		v.Autoscroll = true
 		fmt.Fprintln(v, "Enter 'help' for list of commands")
-		fmt.Fprint(v, "Command?")
+		printCommand(v)
 		g.Update(scrollToEnd)
 		//v.Wrap = true
 		if _, err := g.SetCurrentView("commands"); err != nil {
@@ -319,10 +349,17 @@ func processCommand(g *gocui.Gui, v *gocui.View) error {
 	}
 
 again:
-	fmt.Fprint(v, "Command?")
+	printCommand(v)
+
 	g.Update(scrollToEnd)
 
 	return nil
+}
+
+func printCommand(v *gocui.View) {
+	v.FgColor = gocui.AttrBold
+	fmt.Fprint(v, "Command?")
+	v.FgColor = gocui.ColorDefault
 }
 
 func main() {
@@ -336,6 +373,7 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
+	g.EscapeProcessing = false // we manage our own colors
 	defer g.Close()
 
 	gui = g
