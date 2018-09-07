@@ -4,7 +4,7 @@ A financial exchange written in Go. Uses quickfixgo for client/server communicat
 
 The client offers a command line GUI, "market maker", and a "playback".
 
-The exchange itself has a bare bones web access component with enhancement plans.
+The exchange itself has a bare bones web interface, that uses web sockets to provide real-time book updates.
 
 The exchange is designed to allow for easy back-testing of trading strategies.
 
@@ -34,6 +34,8 @@ marketmaker -symbol IBM
 
 client
 
-# planned TODOs
+# screen shots
 
-Finish the /symbol exchange web access to provide a live book depth using web sockets and JSON
+![client screen shot](doc/clientss.png)
+![web screen shot](doc/webss.png)
+
