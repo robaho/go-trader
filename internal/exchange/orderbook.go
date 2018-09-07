@@ -57,7 +57,8 @@ func insertSort(orders []sessionOrder, so sessionOrder, direction int) []session
 		}
 		return cmp >= 0
 	})
-	return append(append(orders[:index], so), orders[index:]...)
+
+	return append(orders[:index], append([]sessionOrder{so}, orders[index:]...)...)
 }
 
 var nextTradeID int64 = 0
