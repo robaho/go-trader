@@ -1,10 +1,12 @@
 package exchange
 
 import (
+	"encoding/json"
 	"github.com/gernest/hot"
 	"github.com/robaho/go-trader/pkg/common"
 	"golang.org/x/net/websocket"
 	"net/http"
+	"strings"
 )
 
 type empty struct{}
@@ -34,7 +36,10 @@ func StartWebServer(addr string) {
 		http.HandleFunc("/book", bookHandler)
 		http.HandleFunc("/instruments", instrumentsHandler)
 		http.HandleFunc("/sessions", sessionsHandler)
+		http.HandleFunc("/api/book/", apiBookHandler)
 		http.HandleFunc("/", welcomeHandler)
+
+		// add REST api
 		http.ListenAndServe(addr, nil)
 	}()
 
@@ -102,4 +107,24 @@ func bookHandler(w http.ResponseWriter, r *http.Request) {
 	data["symbol"] = symbol
 
 	t.Execute(w, "book.html", data)
+}
+
+func apiBookHandler(w http.ResponseWriter, r *http.Request) {
+	symbol := strings.TrimPrefix(r.URL.Path, "/api/book/")
+
+	instrument := common.IMap.GetBySymbol(symbol)
+	if instrument == nil {
+		http.Error(w, "the symbol "+symbol+" is unknown", http.StatusNotFound)
+	} else {
+		book := GetBook(symbol)
+		if book == nil {
+			book = &common.Book{}
+		}
+		b, err := json.Marshal(book)
+		if err != nil {
+			r.Response.StatusCode = http.StatusInternalServerError
+		} else {
+			w.Write(b)
+		}
+	}
 }
