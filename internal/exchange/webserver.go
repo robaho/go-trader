@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"github.com/gernest/hot"
 	"github.com/robaho/go-trader/pkg/common"
@@ -36,7 +37,7 @@ func StartWebServer(addr string) {
 		http.HandleFunc("/book", bookHandler)
 		http.HandleFunc("/instruments", instrumentsHandler)
 		http.HandleFunc("/sessions", sessionsHandler)
-		http.HandleFunc("/api/book/", apiBookHandler)
+		http.HandleFunc("/api/book/", authenticate(apiBookHandler))
 		http.HandleFunc("/", welcomeHandler)
 
 		// add REST api
@@ -51,6 +52,38 @@ func StartWebServer(addr string) {
 			panic("ListenAndServe: " + err.Error())
 		}
 	}()
+}
+
+func authenticate(handler func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+		s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
+		if len(s) != 2 {
+			http.Error(w, "Not authorized", 401)
+			return
+		}
+
+		b, err := base64.StdEncoding.DecodeString(s[1])
+		if err != nil {
+			http.Error(w, err.Error(), 401)
+			return
+		}
+
+		pair := strings.SplitN(string(b), ":", 2)
+		if len(pair) != 2 {
+			http.Error(w, "Not authorized", 401)
+			return
+		}
+
+		if pair[0] != "guest" || pair[1] != "password" {
+			http.Error(w, "Not authorized", 401)
+			return
+		}
+
+		handler(w, r)
+	}
+
 }
 
 type BookRequest struct {

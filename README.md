@@ -8,7 +8,7 @@ The exchange itself has a bare bones web interface, that uses web sockets to pro
 
 The exchange is designed to allow for easy back-testing of trading strategies.
 
-It was primarly developed to further my knowledge of Go and test its suitability for high-performance financial applications.
+It was primarily developed to further my knowledge of Go and test its suitability for high-performance financial applications.
 
 # install
 
@@ -34,8 +34,23 @@ marketmaker -symbol IBM
 
 client
 
+# REST api
+
+access full book (use guest/password to login)
+
+localhost:8080/api/book/SYMBOL
+
 # screen shots
 
 ![client screen shot](doc/clientss.png)
 ![web screen shot](doc/webss.png)
 
+# ToDos
+
+Add more REST api methods
+
+Ability to add instruments on the fly
+
+Support instruments other than equities (options, futures, spreads, etc.)
+
+ 
