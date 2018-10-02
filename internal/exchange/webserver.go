@@ -7,6 +7,7 @@ import (
 	"github.com/gernest/hot"
 	"github.com/robaho/go-trader/pkg/common"
 	"golang.org/x/net/websocket"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
@@ -65,12 +66,22 @@ func getString(key string, data string) string {
 	}
 	return ""
 }
+
+var nonceMap = make(map[string]bool)
+
+func getNonce() string {
+	nonce := make([]byte, 16)
+	rand.Read(nonce)
+	nonces := hex.EncodeToString(nonce)
+	nonceMap[nonces] = true
+	return nonces
+}
+
 func authenticate(handler func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("WWW-Authenticate", `Digest realm="Restricted",nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093"`) // use same nonce for testing
-
 		s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 		if len(s) != 2 || s[0] != "Digest" {
+			w.Header().Set("WWW-Authenticate", `Digest realm="Restricted",nonce="`+getNonce()+`""`)
 			http.Error(w, "Not authorized", 401)
 			return
 		}
@@ -78,6 +89,14 @@ func authenticate(handler func(w http.ResponseWriter, r *http.Request)) func(htt
 		uri := getString("uri", s[1])
 		nonce := getString("nonce", s[1])
 		response := getString("response", s[1])
+
+		if _, exists := nonceMap[nonce]; !exists {
+			w.Header().Set("WWW-Authenticate", `Digest stale=true,realm="Restricted",nonce="`+getNonce()+`""`)
+			http.Error(w, "Not authorized", 401)
+			return
+		}
+
+		delete(nonceMap, nonce)
 
 		h1 := md5.Sum([]byte("guest:Restricted:password"))
 		h2 := md5.Sum([]byte(r.Method + ":" + uri))
@@ -89,6 +108,8 @@ func authenticate(handler func(w http.ResponseWriter, r *http.Request)) func(htt
 			http.Error(w, "Not authorized", 401)
 			return
 		}
+
+		w.Header().Set("Set-Cookie", "golangrocks")
 
 		handler(w, r)
 	}
