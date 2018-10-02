@@ -1,12 +1,14 @@
 package exchange
 
 import (
-	"encoding/base64"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"github.com/gernest/hot"
 	"github.com/robaho/go-trader/pkg/common"
 	"golang.org/x/net/websocket"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -54,29 +56,36 @@ func StartWebServer(addr string) {
 	}()
 }
 
+func getString(key string, data string) string {
+	regex := key + "=" + "\"(?P<Value>.*?)\""
+	p := regexp.MustCompile(regex)
+	results := p.FindStringSubmatch(data)
+	if len(results) > 1 {
+		return results[1]
+	}
+	return ""
+}
 func authenticate(handler func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		w.Header().Set("WWW-Authenticate", `Digest realm="Restricted",nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093"`) // use same nonce for testing
 
 		s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
-		if len(s) != 2 {
+		if len(s) != 2 || s[0] != "Digest" {
 			http.Error(w, "Not authorized", 401)
 			return
 		}
 
-		b, err := base64.StdEncoding.DecodeString(s[1])
-		if err != nil {
-			http.Error(w, err.Error(), 401)
-			return
-		}
+		uri := getString("uri", s[1])
+		nonce := getString("nonce", s[1])
+		response := getString("response", s[1])
 
-		pair := strings.SplitN(string(b), ":", 2)
-		if len(pair) != 2 {
-			http.Error(w, "Not authorized", 401)
-			return
-		}
+		h1 := md5.Sum([]byte("guest:Restricted:password"))
+		h2 := md5.Sum([]byte(r.Method + ":" + uri))
+		h3 := md5.Sum([]byte(hex.EncodeToString(h1[:]) + ":" + nonce + ":" + hex.EncodeToString(h2[:])))
 
-		if pair[0] != "guest" || pair[1] != "password" {
+		expected := hex.EncodeToString(h3[:])
+
+		if expected != response {
 			http.Error(w, "Not authorized", 401)
 			return
 		}
