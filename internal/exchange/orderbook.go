@@ -46,12 +46,18 @@ func (ob *orderBook) add(so sessionOrder) ([]trade, error) {
 	// match and build trades
 	var trades = matchTrades(ob)
 
+	// cancel any remaining market order
+	if so.order.OrderType == Market && so.order.IsActive() {
+		so.order.OrderState = Cancelled
+		ob.remove(so)
+	}
+
 	return trades, nil
 }
 
 func insertSort(orders []sessionOrder, so sessionOrder, direction int) []sessionOrder {
 	index := sort.Search(len(orders), func(i int) bool {
-		cmp := so.order.Price.Cmp(orders[i].order.Price) * direction
+		cmp := so.getPrice().Cmp(orders[i].getPrice()) * direction
 		if cmp == 0 {
 			cmp = CmpTime(so.time, orders[i].time)
 		}
@@ -72,7 +78,7 @@ func matchTrades(book *orderBook) []trade {
 		bid := book.bids[0]
 		ask := book.asks[0]
 
-		if !bid.order.Price.GreaterThanOrEqual(ask.order.Price) {
+		if !bid.getPrice().GreaterThanOrEqual(ask.getPrice()) {
 			break
 		}
 

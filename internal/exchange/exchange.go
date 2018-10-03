@@ -35,6 +35,21 @@ type session struct {
 	quotes map[Instrument]quotePair
 }
 
+var buyMarketPrice = NewDecimal("9999999999999")
+var sellMarketPrice = ZERO
+
+// return the "effective price" of an order - so market orders can always be at the top
+func (so *sessionOrder) getPrice() decimal.Decimal {
+	if so.order.OrderType == Market {
+		if so.order.Side == Buy {
+			return buyMarketPrice
+		} else {
+			return sellMarketPrice
+		}
+	}
+	return so.order.Price
+}
+
 func newSession(id string) session {
 	s := session{}
 	s.id = id
@@ -100,7 +115,7 @@ func (e *exchange) CreateOrder(session string, order *Order) (OrderID, error) {
 	book := ob.buildBook()
 	sendMarketData(MarketEvent{book, trades})
 	App.sendExecutionReports(trades)
-	if len(trades) == 0 {
+	if len(trades) == 0 || order.OrderState == Cancelled {
 		App.sendExecutionReport(enum.ExecType_NEW, so)
 	}
 

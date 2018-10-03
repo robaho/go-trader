@@ -68,10 +68,6 @@ func (app *myApplication) onNewOrderSingle(msg newordersingle.NewOrderSingle, se
 	if err != nil {
 		return err
 	}
-	price, err := msg.GetPrice()
-	if err != nil {
-		return err
-	}
 	qty, err := msg.GetOrderQty()
 	if err != nil {
 		return err
@@ -80,14 +76,23 @@ func (app *myApplication) onNewOrderSingle(msg newordersingle.NewOrderSingle, se
 	if err != nil {
 		return err
 	}
-	if ordType != enum.OrdType_LIMIT {
-		return quickfix.NewMessageRejectError("only limit orders supported", 0, nil)
+	var price decimal.Decimal
+	if ordType == enum.OrdType_LIMIT {
+		price, err = msg.GetPrice()
+		if err != nil {
+			return err
+		}
 	}
 	instrument := IMap.GetBySymbol(symbol)
 	if instrument == nil {
 		return quickfix.NewMessageRejectError("unknown symbol "+symbol, 0, nil)
 	}
-	order := LimitOrder(instrument, MapFromFixSide(side), price, qty)
+	var order *Order
+	if ordType == enum.OrdType_LIMIT {
+		order = LimitOrder(instrument, MapFromFixSide(side), price, qty)
+	} else {
+		order = MarketOrder(instrument, MapFromFixSide(side), qty)
+	}
 	order.Id = NewOrderID(clOrdId)
 	app.e.CreateOrder(sessionID.String(), order)
 

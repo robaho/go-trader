@@ -6,7 +6,7 @@ The client offers a command line GUI, "market maker", and a "playback".
 
 The exchange itself has a bare bones web interface, that uses web sockets to provide real-time book updates.
 
-The exchange is designed to allow for easy back-testing of trading strategies.
+The exchange is designed to allow for easy back-testing of trading strategies. It supports limit and market orders.
 
 It was primarily developed to further my knowledge of Go and test its suitability for high-performance financial applications.
 

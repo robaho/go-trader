@@ -116,7 +116,7 @@ func (c *connector) CreateOrder(order *Order) (OrderID, error) {
 		return -1, NotConnected
 	}
 
-	if order.OrderType != Limit {
+	if order.OrderType != Limit && order.OrderType != Market {
 		return -1, UnsupportedOrderType
 	}
 
@@ -129,6 +129,9 @@ func (c *connector) CreateOrder(order *Order) (OrderID, error) {
 	order.Id = orderID
 
 	var ordtype = field.NewOrdType(enum.OrdType_LIMIT)
+	if order.OrderType == Market {
+		ordtype = field.NewOrdType(enum.OrdType_MARKET)
+	}
 
 	fixOrder := newordersingle.New(field.NewClOrdID(orderID.String()), field.NewSide(MapToFixSide(order.Side)), field.NewTransactTime(time.Now()), ordtype)
 	fixOrder.SetSymbol(order.Instrument.Symbol())

@@ -296,17 +296,16 @@ func processCommand(g *gocui.Gui, v *gocui.View) error {
 		goto again
 	}
 	if "help" == parts[0] {
-		fmt.Fprintln(v, "The available commands are: quit, {buy:sell} SYMBOL QTY PRICE, modify ORDERID QTY PRICE, cancel ORDERID, book SYMBOL")
+		fmt.Fprintln(v, "The available commands are: quit, {buy:sell} SYMBOL QTY [PRICE], modify ORDERID QTY PRICE, cancel ORDERID, book SYMBOL")
 	} else if "quit" == parts[0] {
 		return gocui.ErrQuit
-	} else if ("buy" == parts[0] || "sell" == parts[0]) && len(parts) == 4 {
+	} else if ("buy" == parts[0] || "sell" == parts[0]) && (len(parts) == 4 || len(parts) == 3) {
 		instrument := IMap.GetBySymbol(parts[1])
 		if instrument == nil {
 			fmt.Fprintln(v, "unknown instrument", parts[1])
 			goto again
 		}
 		qty := NewDecimal(parts[2])
-		price := NewDecimal(parts[3])
 
 		var side Side
 		if "buy" == parts[0] {
@@ -317,10 +316,19 @@ func processCommand(g *gocui.Gui, v *gocui.View) error {
 			fmt.Fprintln(v, "incorrect buy/sell type", parts[1])
 			goto again
 		}
+		var err error
+		if len(parts) == 4 {
+			price := NewDecimal(parts[3])
+			order := LimitOrder(instrument, side, price, qty)
+			_, err = exchange.CreateOrder(order)
+		} else {
+			order := MarketOrder(instrument, side, qty)
+			_, err = exchange.CreateOrder(order)
+		}
+		if err != nil {
+			vlogf("log", "unable to submit order %s\n", err.Error())
+		}
 
-		order := LimitOrder(instrument, side, price, qty)
-
-		exchange.CreateOrder(order)
 	} else if "modify" == parts[0] && len(parts) == 4 {
 		orderID := NewOrderID(parts[1])
 		qty := NewDecimal(parts[2])
