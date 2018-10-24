@@ -1,4 +1,3 @@
-var sequence
 var symbol
 
 function connect() {
@@ -6,7 +5,7 @@ function connect() {
 
     connection = new WebSocket(serverUrl);
     connection.onopen = function () {
-        send();
+        subscribe();
     }
 
     connection.onmessage = function(evt) {
@@ -15,7 +14,6 @@ function connect() {
         if (evt.data!=null) {
             var book = JSON.parse(evt.data)
             f.innerHTML = buildBookHtml(book)
-            sequence = book.Sequence
         }
     }
 
@@ -32,10 +30,9 @@ function connect() {
     }
 }
 
-function send() {
+function subscribe() {
     var msg = {
-        symbol: symbol,
-        sequence: sequence
+        symbol: symbol
     };
     connection.send(JSON.stringify(msg));
 }

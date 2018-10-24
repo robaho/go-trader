@@ -3,14 +3,15 @@ package exchange
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/json"
 	"github.com/gernest/hot"
-	"github.com/robaho/go-trader/pkg/common"
+	. "github.com/robaho/go-trader/pkg/common"
 	"golang.org/x/net/websocket"
 	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 )
 
 type empty struct{}
@@ -55,6 +56,8 @@ func StartWebServer(addr string) {
 			panic("ListenAndServe: " + err.Error())
 		}
 	}()
+
+	go websocketPublisher()
 }
 
 func getString(key string, data string) string {
@@ -121,7 +124,11 @@ type BookRequest struct {
 	Sequence uint64
 }
 
+var webCons sync.Map
+
 func BookServer(ws *websocket.Conn) {
+	defer webCons.Delete(ws)
+
 	for {
 		request := BookRequest{}
 
@@ -129,9 +136,11 @@ func BookServer(ws *websocket.Conn) {
 			break
 		}
 
+		webCons.Store(ws, request.Symbol)
+
 		book := GetBook(request.Symbol)
 		if book == nil {
-			book = &common.Book{}
+			book = &Book{}
 		}
 
 		if request.Sequence >= book.Sequence { // book hasn't changed
@@ -142,6 +151,45 @@ func BookServer(ws *websocket.Conn) {
 			break
 		}
 	}
+}
+
+// publish book updates to subscribed websockets
+// no need to subscribe to internal listener, just publish on an interval
+func websocketPublisher() {
+	var latest = make(map[string]uint64) // track latest sequence number, no need to send anything that hasn't changed
+	for {
+		// cache json so we only generate once per loop
+		var json = make(map[string][]byte)
+
+		webCons.Range(func(key, value interface{}) bool {
+			con := key.(*websocket.Conn)
+			symbol := value.(string)
+
+			book := GetBook(symbol)
+			if book == nil || book.Sequence == latest[symbol] {
+				return true
+			}
+			latest[symbol] = book.Sequence
+			msg := json[symbol]
+			if msg == nil {
+				msg = bookToJSON(symbol, book)
+				json[symbol] = msg
+			}
+			con.Write(msg)
+			return true
+		})
+		time.Sleep(time.Second)
+	}
+}
+
+func bookToJSON(symbol string, book *Book) []byte {
+	m := make(map[string]interface{})
+	m["Symbol"] = symbol
+	m["Bids"] = book.Bids
+	m["Asks"] = book.Asks
+	m["Sequence"] = book.Sequence
+	msg, _, _ := websocket.JSON.Marshal(m)
+	return msg
 }
 
 func welcomeHandler(w http.ResponseWriter, r *http.Request) {
@@ -157,7 +205,7 @@ func sessionsHandler(w http.ResponseWriter, r *http.Request) {
 
 func instrumentsHandler(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
-	data["Symbols"] = common.IMap.AllSymbols()
+	data["Symbols"] = IMap.AllSymbols()
 
 	t.Execute(w, "instruments.html", data)
 }
@@ -175,19 +223,15 @@ func bookHandler(w http.ResponseWriter, r *http.Request) {
 func apiBookHandler(w http.ResponseWriter, r *http.Request) {
 	symbol := strings.TrimPrefix(r.URL.Path, "/api/book/")
 
-	instrument := common.IMap.GetBySymbol(symbol)
+	instrument := IMap.GetBySymbol(symbol)
 	if instrument == nil {
 		http.Error(w, "the symbol "+symbol+" is unknown", http.StatusNotFound)
 	} else {
 		book := GetBook(symbol)
 		if book == nil {
-			book = &common.Book{}
+			book = &Book{}
 		}
-		b, err := json.Marshal(book)
-		if err != nil {
-			r.Response.StatusCode = http.StatusInternalServerError
-		} else {
-			w.Write(b)
-		}
+		b := bookToJSON(symbol, book)
+		w.Write(b)
 	}
 }

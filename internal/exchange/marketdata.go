@@ -22,10 +22,32 @@ var eventChannel chan MarketEvent
 var lastSentBook map[Instrument]uint64 // to avoid publishing exact same book multiple times due to coalescing
 var sequence uint64
 var udpCon *net.UDPConn
+var subMutex sync.Mutex
+var subscriptions []chan *Book
 
 type MarketEvent struct {
 	book   *Book
 	trades []trade
+}
+
+func subscribe(sub chan *Book) {
+	subMutex.Lock()
+	defer subMutex.Unlock()
+
+	subscriptions = append(subscriptions, sub)
+}
+
+func unsubscribe(sub chan *Book) {
+	subMutex.Lock()
+	defer subMutex.Unlock()
+
+	copy := subscriptions[:0]
+	for _, v := range subscriptions {
+		if v != sub {
+			copy = append(copy, v)
+		}
+	}
+	subscriptions = copy
 }
 
 func sendMarketData(event MarketEvent) {
@@ -60,8 +82,11 @@ func publish() {
 
 		book := getLatestBook(event.book)
 		trades := coalesceTrades(event.trades)
-
 		sendPacket(protocol.EncodeMarketEvent(book, trades))
+		// publish to internal subscribers
+		for _, sub := range subscriptions {
+			sub <- book
+		}
 	}
 }
 
