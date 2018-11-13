@@ -8,6 +8,10 @@ The exchange itself has a bare bones web interface, that uses web sockets to pro
 
 The exchange is designed to allow for easy back-testing of trading strategies. It supports limit and market orders.
 
+There is a very simple sample "algo". The program structure is applicable to many strategies that use an entry and exit price.
+This can be run in conjunction with the 'marketmaker' sample to test the "algo". Hint: it has a 50/50 chance of being successful EXCEPT the
+market maker bid/ask spread must be accounted for - which makes it far less than 50/50...  
+
 It was primarily developed to further my knowledge of Go and test its suitability for high-performance financial applications.
 
 # install

@@ -1,0 +1,15 @@
+# allow anyone to connect
+[DEFAULT]
+ReconnectInterval=60
+TargetCompID=GOX
+SocketConnectPort=5001
+SocketConnectHost=localhost
+UseDataDictionary=false
+BeginString=FIX.4.4
+HeartBtInt=30
+ResetOnDisconnect=Y
+RestOnLogout=Y
+
+[SESSION]
+SenderCompID=ALGO
+ConnectionType=initiator

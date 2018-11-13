@@ -28,3 +28,6 @@ TargetCompID=CLIENT
 
 [SESSION]
 TargetCompID=PLAYBACK
+
+[SESSION]
+TargetCompID=ALGO
