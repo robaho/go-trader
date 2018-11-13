@@ -72,7 +72,7 @@ func main() {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	bidPrice := NewDecimal("99")
+	bidPrice := NewDecimal("99.75")
 	bidQty := NewDecimal("10")
 	askPrice := NewDecimal("100")
 	askQty := NewDecimal("10")
@@ -84,8 +84,13 @@ func main() {
 
 	for {
 		var delta = 1
-		if r.Intn(10) < 5 {
+		var r = r.Intn(10)
+		if r <= 2 {
 			delta = -1
+		} else if r >= 7 {
+			delta = 1
+		} else {
+			delta = 0
 		}
 
 		for {
@@ -102,13 +107,15 @@ func main() {
 		}
 
 		now := time.Now()
-		err := exchange.Quote(instrument, bidPrice, bidQty, askPrice, askQty)
-		if err != nil {
-			fmt.Println("unable to submit quote: " + err.Error())
+		if delta != 0 {
+			err := exchange.Quote(instrument, bidPrice, bidQty, askPrice, askQty)
+			if err != nil {
+				fmt.Println("unable to submit quote: " + err.Error())
+			}
+			callback.cond.L.Lock()
+			callback.cond.Wait()
+			callback.cond.L.Unlock()
 		}
-		callback.cond.L.Lock()
-		callback.cond.Wait()
-		callback.cond.L.Unlock()
 		h.Add(float64(time.Now().Sub(now).Nanoseconds()))
 		if *delay != 0 {
 			time.Sleep(time.Duration(int64(*delay)) * time.Millisecond)
