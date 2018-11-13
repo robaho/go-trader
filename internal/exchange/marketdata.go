@@ -5,6 +5,7 @@ import (
 	"container/list"
 	"encoding/binary"
 	"fmt"
+	"golang.org/x/net/ipv4"
 	"log"
 	"net"
 	"strconv"
@@ -22,6 +23,7 @@ var eventChannel chan MarketEvent
 var lastSentBook map[Instrument]uint64 // to avoid publishing exact same book multiple times due to coalescing
 var sequence uint64
 var udpCon *net.UDPConn
+var pUdpCon *ipv4.PacketConn
 var subMutex sync.Mutex
 var subscriptions []chan *Book
 
@@ -152,6 +154,15 @@ func startMarketData() {
 	if saddr == "" {
 		panic("unable to read multicast addr")
 	}
+	intf := props.GetString("multicast_intf", "lo0")
+	if intf == "" {
+		panic("unable to read multicast addr")
+	}
+	_intf, err := net.InterfaceByName(intf)
+	if err != nil {
+		panic("unable to read multicast interface")
+	}
+
 	fmt.Println("publishing marketdata at", saddr)
 
 	addr, err := net.ResolveUDPAddr("udp", saddr)
@@ -168,8 +179,11 @@ func startMarketData() {
 	if err != nil {
 		panic(err)
 	}
+	c.SetWriteBuffer(16 * 1024 * 1024)
+
 	udpCon = c
-	udpCon.SetWriteBuffer(16 * 1024 * 1024)
+	pUdpCon = ipv4.NewPacketConn(udpCon)
+	pUdpCon.SetMulticastInterface(_intf)
 
 	go func() {
 		publish()

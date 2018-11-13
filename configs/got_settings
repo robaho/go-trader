@@ -1,3 +1,4 @@
 multicast_addr=224.0.0.100:9999
+multicast_intf=lo0
 replay_host=localhost
 replay_port=9999

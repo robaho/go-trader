@@ -243,6 +243,15 @@ func NewConnector(callback ConnectorCallback, filename string, logOutput io.Writ
 		panic("unable to read multicast addr")
 	}
 
+	intf := props.GetString("multicast_intf", "lo0")
+	if intf == "" {
+		panic("unable to read multicast interface")
+	}
+	_intf, err := net.InterfaceByName(intf)
+	if err != nil {
+		panic(err)
+	}
+
 	rhost := props.GetString("replay_host", "")
 	if rhost == "" {
 		panic("unable to read replay host")
@@ -262,7 +271,7 @@ func NewConnector(callback ConnectorCallback, filename string, logOutput io.Writ
 
 	go func() {
 		var packetNumber uint64 = 0
-		l, err := net.ListenMulticastUDP("udp", nil, addr)
+		l, err := net.ListenMulticastUDP("udp", _intf, addr)
 		if err != nil {
 			panic(err)
 		}
