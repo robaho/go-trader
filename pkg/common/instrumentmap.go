@@ -74,13 +74,16 @@ func init() {
 	scanner := bufio.NewScanner(inputFile)
 	for scanner.Scan() {
 		s := scanner.Text()
-		if strings.HasPrefix(s, "//") {
+		if strings.HasPrefix(s, "//") || strings.HasPrefix(s, "#") {
+			continue
+		}
+		if s == "" {
 			continue
 		}
 		parts := strings.Fields(s)
 		id := ParseInt(parts[0])
-		if parts[1] == "E" {
-			i := NewEquity(int64(id), parts[2])
+		if len(parts) == 2 {
+			i := NewInstrument(int64(id), parts[2])
 			IMap.Put(i)
 		}
 	}

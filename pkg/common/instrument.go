@@ -21,16 +21,16 @@ type base struct {
 	group  string
 }
 
-type Equity struct {
+type instrumentImpl struct {
 	base
 }
 
-func (e *Equity) String() string {
-	return "equity:" + e.symbol
+func (e *instrumentImpl) String() string {
+	return e.symbol
 }
 
-func NewEquity(id int64, symbol string) Instrument {
-	e := Equity{base{id, symbol, symbol}}
+func NewInstrument(id int64, symbol string) Instrument {
+	e := instrumentImpl{base{id, symbol, symbol}}
 	return e
 }
 

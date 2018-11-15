@@ -55,6 +55,4 @@ Add more REST api methods
 
 Ability to add instruments on the fly
 
-Support instruments other than equities (options, futures, spreads, etc.)
-
  

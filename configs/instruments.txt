@@ -1,5 +1,13 @@
 // in a real implementation, this information would be downloaded from the exchange
-1 E IBM
-2 E AAPL
-3 E AMZN
-4 E GOOG
+//
+// the format is:
+//
+// INSTRUMENT_ID SYMBOL
+//
+// the INSTRUMENT_ID is the numeric ID used during market data dissemination
+//
+
+1 IBM
+2 AAPL
+3 AMZN
+4 GOOG
