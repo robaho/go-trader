@@ -4,11 +4,15 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/quickfixgo/fix44/securitydefinitionrequest"
+	"github.com/quickfixgo/fix44/securitylistrequest"
 	"io"
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/quickfixgo/enum"
@@ -33,8 +37,11 @@ type connector struct {
 	sessionID quickfix.SessionID
 	initiator *quickfix.Initiator
 	loggedIn  StatusBool
-	settings  string
-	log       io.Writer
+	// true after all instruments are downloaded from exchange
+	downloaded StatusBool
+	settings   string
+	log        io.Writer
+	secReqId   int64
 }
 
 func (c *connector) IsConnected() bool {
@@ -83,13 +90,6 @@ func (c *connector) Connect() error {
 
 	c.connected = true
 
-	//publish the known instruments, a real exchange would download these
-	go func() {
-		for _, s := range IMap.AllSymbols() {
-			c.callback.OnInstrument(IMap.GetBySymbol(s))
-		}
-	}()
-
 	return nil
 }
 func getSession(settings map[quickfix.SessionID]*quickfix.SessionSettings) quickfix.SessionID {
@@ -108,6 +108,38 @@ func (c *connector) Disconnect() error {
 	}
 	c.initiator.Stop()
 	c.connected = false
+	return nil
+}
+
+func (c *connector) CreateInstrument(symbol string) {
+	_reqid := atomic.AddInt64(&c.secReqId, 1)
+	reqid := field.NewSecurityReqID(strconv.FormatInt(_reqid, 10))
+	reqtype := field.NewSecurityRequestType(enum.SecurityRequestType_SYMBOL)
+
+	msg := securitydefinitionrequest.New(reqid, reqtype)
+	msg.SetSymbol(symbol)
+
+	quickfix.SendToTarget(msg, c.sessionID)
+}
+
+func (c *connector) DownloadInstruments() error {
+	c.downloaded.SetFalse()
+
+	_reqid := atomic.AddInt64(&c.secReqId, 1)
+	reqid := field.NewSecurityReqID(strconv.FormatInt(_reqid, 10))
+	reqtype := field.NewSecurityListRequestType(enum.SecurityListRequestType_ALL_SECURITIES)
+
+	msg := securitylistrequest.New(reqid, reqtype)
+
+	err := quickfix.SendToTarget(msg, c.sessionID)
+	if err != nil {
+		return err
+	}
+
+	// wait for login up to 30 seconds
+	if !c.downloaded.WaitForTrue(30 * 1000) {
+		return DownloadFailed
+	}
 	return nil
 }
 

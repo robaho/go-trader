@@ -48,6 +48,11 @@ func main() {
 		panic("exchange is not connected")
 	}
 
+	err := exchange.DownloadInstruments()
+	if err != nil {
+		panic(err)
+	}
+
 	f, err := os.Open(*playback)
 	if err != nil {
 		panic(err)

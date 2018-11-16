@@ -18,6 +18,13 @@ type ExchangeConnector interface {
 	Quote(instrument Instrument, bidPrice decimal.Decimal, bidQuantity decimal.Decimal, askPrice decimal.Decimal, askQuantity decimal.Decimal) error
 
 	GetExchangeCode() string
+
+	// ask exchange to create the instrument if it does not already exist, and assign a numeric instrument id
+	// the instruments are not persisted across exchange restarts
+	CreateInstrument(symbol string)
+	// ask exchange for configured instruments, will be emitted via onInstrument() on the callback. this call
+	// blocks until all instruments are received
+	DownloadInstruments() error
 }
 
 // a fill on an order or quote
@@ -59,3 +66,4 @@ var OrderNotFound = errors.New("order not found")
 var InvalidConnector = errors.New("invalid connector")
 var UnknownInstrument = errors.New("unknown instrument")
 var UnsupportedOrderType = errors.New("unsupported order type")
+var DownloadFailed = errors.New("download failed")

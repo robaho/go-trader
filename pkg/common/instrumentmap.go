@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 )
 
+// global instrument map which is fully synchronized
 var IMap instrumentMap
 
 type instrumentMap struct {
@@ -61,13 +62,11 @@ func (im *instrumentMap) Put(instrument Instrument) {
 	im.byID[instrument.ID()] = instrument
 }
 
-func init() {
-	IMap.bySymbol = make(map[string]Instrument)
-	IMap.byID = make(map[int64]Instrument)
-
-	inputFile, err := os.Open("configs/instruments.txt")
+// load the instrument map from a file, see configs/instruments.txt for the format
+func (im *instrumentMap) Load(filepath string) error {
+	inputFile, err := os.Open(filepath)
 	if err != nil {
-		return
+		return err
 	}
 	defer inputFile.Close()
 
@@ -83,8 +82,14 @@ func init() {
 		parts := strings.Fields(s)
 		id := ParseInt(parts[0])
 		if len(parts) == 2 {
-			i := NewInstrument(int64(id), parts[2])
-			IMap.Put(i)
+			i := NewInstrument(int64(id), parts[1])
+			im.Put(i)
 		}
 	}
+	return nil
+}
+
+func init() {
+	IMap.bySymbol = make(map[string]Instrument)
+	IMap.byID = make(map[int64]Instrument)
 }

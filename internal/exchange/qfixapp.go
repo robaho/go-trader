@@ -2,6 +2,9 @@ package exchange
 
 import (
 	"fmt"
+	"github.com/quickfixgo/fix44/securitydefinition"
+	"github.com/quickfixgo/fix44/securitylistrequest"
+	"strconv"
 	"sync"
 
 	"github.com/quickfixgo/enum"
@@ -11,17 +14,21 @@ import (
 	"github.com/quickfixgo/fix44/newordersingle"
 	"github.com/quickfixgo/fix44/ordercancelreplacerequest"
 	"github.com/quickfixgo/fix44/ordercancelrequest"
+	"github.com/quickfixgo/fix44/securitydefinitionrequest"
 	"github.com/quickfixgo/quickfix"
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/shopspring/decimal"
 )
 
 var App myApplication
+var endOfDownload = NewInstrument(0, "endofdownload")
 
 type myApplication struct {
 	*quickfix.MessageRouter
-	e          *exchange
-	sessionIDs sync.Map
+	e            *exchange
+	sessionIDs   sync.Map
+	lock         sync.Mutex
+	instrumentID int64
 }
 
 func (app *myApplication) OnCreate(sessionID quickfix.SessionID) {
@@ -108,6 +115,7 @@ func (app *myApplication) onOrderCancelRequest(msg ordercancelrequest.OrderCance
 
 	return nil
 }
+
 func (app *myApplication) onOrderCancelReplaceRequest(msg ordercancelreplacerequest.OrderCancelReplaceRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	clOrdId, err := msg.GetClOrdID()
 	if err != nil {
@@ -169,6 +177,59 @@ func (app *myApplication) onMassQuote(msg massquote.MassQuote, sessionID quickfi
 	app.e.Quote(sessionID.String(), instrument, bidPrice, bidQty, offerPrice, offerQty)
 
 	return nil
+}
+
+func (app *myApplication) onSecurityDefinitionRequest(msg securitydefinitionrequest.SecurityDefinitionRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+
+	reqid, err := msg.GetSecurityReqID()
+	if err != nil {
+		return err
+	}
+	symbol, err := msg.GetSymbol()
+	if err != nil {
+		return err
+	}
+
+	app.lock.Lock()
+	defer app.lock.Unlock()
+
+	instrument := IMap.GetBySymbol(symbol)
+	if instrument != nil {
+		app.sendInstrument(instrument, reqid, sessionID)
+	} else {
+		app.instrumentID++
+		instrument = NewInstrument(app.instrumentID, symbol)
+		IMap.Put(instrument)
+		app.sendInstrument(instrument, reqid, sessionID)
+	}
+	return nil
+}
+
+func (app *myApplication) onSecurityListRequest(msg securitylistrequest.SecurityListRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+
+	reqid, err := msg.GetSecurityReqID()
+	if err != nil {
+		return err
+	}
+
+	for _, symbol := range IMap.AllSymbols() {
+		instrument := IMap.GetBySymbol(symbol)
+		app.sendInstrument(instrument, reqid, sessionID)
+	}
+	app.sendInstrument(endOfDownload, reqid, sessionID)
+
+	return nil
+}
+
+func (app *myApplication) sendInstrument(instrument Instrument, reqid string, sessionID quickfix.SessionID) {
+	resid := strconv.Itoa(int(instrument.ID()))
+	restype := enum.SecurityResponseType_ACCEPT_SECURITY_PROPOSAL_WITH_REVISIONS_AS_INDICATED_IN_THE_MESSAGE
+	msg := securitydefinition.New(field.NewSecurityReqID(reqid), field.NewSecurityResponseID(resid), field.NewSecurityResponseType(restype))
+
+	msg.SetSymbol(instrument.Symbol())
+	msg.SetSecurityID(strconv.FormatInt(instrument.ID(), 10))
+
+	quickfix.SendToTarget(msg, getSessionID(sessionID.String()))
 }
 
 func (app *myApplication) sendTradeExecutionReport(so sessionOrder, price decimal.Decimal, qty decimal.Decimal, remaining decimal.Decimal) {
@@ -240,6 +301,10 @@ func init() {
 	App.AddRoute(ordercancelrequest.Route(App.onOrderCancelRequest))
 	App.AddRoute(ordercancelreplacerequest.Route(App.onOrderCancelReplaceRequest))
 	App.AddRoute(massquote.Route(App.onMassQuote))
+	App.AddRoute(securitydefinitionrequest.Route(App.onSecurityDefinitionRequest))
+	App.AddRoute(securitylistrequest.Route(App.onSecurityListRequest))
+
+	App.instrumentID = 1000000 // start high for dynamic instruments
 }
 
 func getSessionID(session string) quickfix.SessionID {

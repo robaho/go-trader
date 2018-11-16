@@ -82,7 +82,7 @@ func vlogln(view string, a ...interface{}) {
 }
 
 func (MyCallback) OnInstrument(instrument Instrument) {
-	vlogf("log", "received instrument %s\n", instrument.Symbol())
+	vlogf("log", "received instrument %s with id %d\n", instrument.Symbol(), instrument.ID())
 }
 
 func (MyCallback) OnOrderStatus(order *Order) {
@@ -296,7 +296,7 @@ func processCommand(g *gocui.Gui, v *gocui.View) error {
 		goto again
 	}
 	if "help" == parts[0] {
-		fmt.Fprintln(v, "The available commands are: quit, {buy:sell} SYMBOL QTY [PRICE], modify ORDERID QTY PRICE, cancel ORDERID, book SYMBOL")
+		fmt.Fprintln(v, "The available commands are: quit, {buy:sell} SYMBOL QTY [PRICE], modify ORDERID QTY PRICE, cancel ORDERID, book SYMBOL, create SYMBOL")
 	} else if "quit" == parts[0] {
 		return gocui.ErrQuit
 	} else if ("buy" == parts[0] || "sell" == parts[0]) && (len(parts) == 4 || len(parts) == 3) {
@@ -352,6 +352,9 @@ func processCommand(g *gocui.Gui, v *gocui.View) error {
 			v, _ := g.View("book")
 			v.Title = "Book Depth for " + instrument.Symbol()
 		}
+	} else if "create" == parts[0] && len(parts) == 2 {
+		symbol := parts[1]
+		exchange.CreateInstrument(symbol)
 	} else {
 		fmt.Fprintln(v, "Unknown command, '", cmd, "' use 'help'")
 	}
@@ -400,6 +403,11 @@ func main() {
 	exchange.Connect()
 	if !exchange.IsConnected() {
 		panic("exchange is not connected")
+	}
+
+	err = exchange.DownloadInstruments()
+	if err != nil {
+		panic(err)
 	}
 
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {

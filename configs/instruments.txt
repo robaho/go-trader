@@ -1,11 +1,12 @@
-// in a real implementation, this information would be downloaded from the exchange
-//
-// the format is:
-//
-// INSTRUMENT_ID SYMBOL
-//
-// the INSTRUMENT_ID is the numeric ID used during market data dissemination
-//
+# in a real implementation, this information would be downloaded from the exchange
+#
+# the format is:
+#
+# INSTRUMENT_ID SYMBOL
+#
+# the INSTRUMENT_ID is the numeric ID used during market data dissemination
+# the INSTRUMENT_ID and SYMBOL must be unique
+#
 
 1 IBM
 2 AAPL

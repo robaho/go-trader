@@ -2,6 +2,7 @@ package connector
 
 import (
 	"fmt"
+	"github.com/quickfixgo/fix44/securitydefinition"
 	"strings"
 
 	"github.com/quickfixgo/enum"
@@ -19,6 +20,7 @@ func newApplication(c *connector) *myApplication {
 	app := new(myApplication)
 	app.MessageRouter = quickfix.NewMessageRouter()
 	app.AddRoute(executionreport.Route(app.onExecutionReport))
+	app.AddRoute(securitydefinition.Route(app.onSecurityDefinition))
 	app.c = c
 	return app
 }
@@ -57,6 +59,33 @@ func (app *myApplication) FromApp(message *quickfix.Message, sessionID quickfix.
 		fmt.Fprintln(app.c.log, "error processing message", err)
 	}
 	return err
+}
+
+func (app *myApplication) onSecurityDefinition(msg securitydefinition.SecurityDefinition, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	_instrumentID, err := msg.GetSecurityID()
+	if err != nil {
+		return err
+	}
+
+	instrumentID := ParseInt(_instrumentID)
+
+	symbol, err := msg.GetSymbol()
+	if err != nil {
+		return err
+	}
+
+	if instrumentID == 0 { // end of instrument download
+		app.c.downloaded.SetTrue()
+		return nil
+	}
+
+	instrument := NewInstrument(int64(instrumentID), symbol)
+
+	IMap.Put(instrument)
+
+	app.c.callback.OnInstrument(instrument)
+
+	return nil
 }
 
 func (app *myApplication) onExecutionReport(msg executionreport.ExecutionReport, sessionID quickfix.SessionID) quickfix.MessageRejectError {

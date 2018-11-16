@@ -126,6 +126,11 @@ func main() {
 		panic("exchange is not connected")
 	}
 
+	err := exchange.DownloadInstruments()
+	if err != nil {
+		panic(err)
+	}
+
 	instrument := IMap.GetBySymbol(callback.symbol)
 	if instrument == nil {
 		log.Fatal("unable symbol", symbol)

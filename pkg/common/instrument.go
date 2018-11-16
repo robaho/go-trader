@@ -5,9 +5,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type Expiration struct {
-	time.Time
-}
+type Expiration time.Time
+type Maturity string
 
 type Instrument interface {
 	ID() int64
@@ -54,12 +53,25 @@ const (
 	Put  optionType = "put"
 )
 
+type Generic struct {
+	Instrument
+}
+
+type Equity struct {
+	Instrument
+}
+
+type Index struct {
+	Instrument
+}
+
 type Option struct {
 	Instrument
-	Underlying Instrument
-	Expires    Expiration
-	Strike     decimal.Decimal
-	OptionTYpe optionType
+	Underlying   Instrument
+	Expires      Expiration
+	Strike       decimal.Decimal
+	OptionType   optionType
+	MaturityDate Maturity
 }
 
 type OptionLeg struct {
@@ -69,6 +81,7 @@ type OptionLeg struct {
 
 type OptionStrategy struct {
 	Instrument
-	Expires Expiration
-	Legs    []OptionLeg
+	Expires  Expiration
+	Maturity Maturity
+	Legs     []OptionLeg
 }

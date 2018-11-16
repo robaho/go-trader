@@ -53,6 +53,4 @@ localhost:8080/api/book/SYMBOL
 
 Add more REST api methods
 
-Ability to add instruments on the fly
-
  

@@ -22,10 +22,16 @@ func main() {
 	runtime.GOMAXPROCS(8)
 
 	fix := flag.String("fix", "configs/qf_got_settings", "set the fix session file")
+	instruments := flag.String("instruments", "configs/instruments.txt", "the instrument file")
 	port := flag.String("port", "8080", "set the web server port")
 	profile := flag.Bool("profile", false, "create CPU profiling output")
 
 	flag.Parse()
+
+	err := common.IMap.Load(*instruments)
+	if err != nil {
+		fmt.Println("unable to load instruments", err)
+	}
 
 	cfg, err := os.Open(*fix)
 	if err != nil {
@@ -77,7 +83,7 @@ func main() {
 			goto again
 		}
 		if "help" == parts[0] {
-			fmt.Println("The available commands are: quit, sessions, book SYMBOL, watch SYMBOL, unwatch SYMBOL")
+			fmt.Println("The available commands are: quit, sessions, book SYMBOL, watch SYMBOL, unwatch SYMBOL, list")
 		} else if "quit" == parts[0] {
 			break
 		} else if "sessions" == parts[0] {
@@ -109,6 +115,11 @@ func main() {
 		} else if "unwatch" == parts[0] && len(parts) == 2 {
 			watching.Delete(parts[1])
 			fmt.Println("You are no longer watching ", parts[1])
+		} else if "list" == parts[0] {
+			for _, symbol := range common.IMap.AllSymbols() {
+				instrument := common.IMap.GetBySymbol(symbol)
+				fmt.Println(instrument)
+			}
 		} else {
 			fmt.Println("Unknown command, '", s, "' use 'help'")
 		}
