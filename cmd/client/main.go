@@ -23,6 +23,10 @@ type MyCallback struct {
 }
 
 func (MyCallback) OnBook(book *Book) {
+	if book.Instrument == nil {
+		return
+	}
+
 	bidPrice, bidQty, askPrice, askQty := "", "", "", ""
 	if book.HasBids() {
 		bidPrice = book.Bids[0].Price.StringFixed(2)
