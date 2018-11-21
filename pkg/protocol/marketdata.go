@@ -27,6 +27,10 @@ func DecodeMarketEvent(r io.ByteReader) (*Book, []Trade) {
 	instrumentId, _ := ReadVarint(r)
 	instrument := IMap.GetByID(instrumentId)
 
+	if instrument == nil {
+		return nil, nil
+	}
+
 	hasBook, _ := r.ReadByte()
 	var book *Book
 	if hasBook == 1 {
