@@ -5,6 +5,7 @@ import (
 	"container/list"
 	"encoding/binary"
 	"fmt"
+	"github.com/shopspring/decimal"
 	"golang.org/x/net/ipv4"
 	"log"
 	"net"
@@ -19,6 +20,8 @@ import (
 // market data caches the latest books, and publishes books and exchange trades via multicast
 
 var bookCache sync.Map
+var statsCache sync.Map
+
 var eventChannel chan MarketEvent
 var lastSentBook map[Instrument]uint64 // to avoid publishing exact same book multiple times due to coalescing
 var sequence uint64
@@ -30,6 +33,19 @@ var subscriptions []chan *Book
 type MarketEvent struct {
 	book   *Book
 	trades []trade
+}
+
+type Statistics struct {
+	Symbol   string
+	BidQty   decimal.Decimal
+	BidPrice decimal.Decimal
+	AskQty   decimal.Decimal
+	AskPrice decimal.Decimal
+	Volume   decimal.Decimal
+	High     decimal.Decimal
+	HasHigh  bool
+	Low      decimal.Decimal
+	HasLow   bool
 }
 
 func subscribe(sub chan *Book) {
@@ -79,11 +95,44 @@ func GetBook(symbol string) *Book {
 }
 
 func publish() {
+	stats := make(map[Instrument]*Statistics)
+
 	for {
 		event := <-eventChannel
 
 		book := getLatestBook(event.book)
 		trades := coalesceTrades(event.trades)
+
+		s, ok := stats[book.Instrument]
+		if !ok {
+			s = &Statistics{}
+			s.Symbol = book.Instrument.Symbol()
+			stats[book.Instrument] = s
+		}
+
+		if book.HasBids() {
+			s.BidPrice = book.Bids[0].Price
+			s.BidQty = book.Bids[0].Quantity
+		}
+		if book.HasAsks() {
+			s.AskPrice = book.Asks[0].Price
+			s.AskQty = book.Asks[0].Quantity
+		}
+
+		for _, t := range trades {
+			s.Volume = s.Volume.Add(t.Quantity)
+			if !s.HasHigh || t.Price.GreaterThan(s.High) {
+				s.High = t.Price
+				s.HasHigh = true
+			}
+			if !s.HasLow || t.Price.LessThan(s.Low) {
+				s.Low = t.Price
+				s.HasLow = true
+			}
+		}
+
+		statsCache.Store(book.Instrument, s)
+
 		sendPacket(protocol.EncodeMarketEvent(book, trades))
 		// publish to internal subscribers
 		for _, sub := range subscriptions {
@@ -101,6 +150,15 @@ func getLatestBook(book *Book) *Book {
 	}
 	return book
 }
+
+func getStatistics(instrument Instrument) *Statistics {
+	stats, ok := statsCache.Load(instrument)
+	if ok {
+		return stats.(*Statistics)
+	}
+	return nil
+}
+
 func coalesceTrades(trades []trade) []Trade {
 	var Trades []Trade
 

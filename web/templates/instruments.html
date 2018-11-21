@@ -3,12 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <title>GOT Exchange Web Interface</title>
+    <style>
+        table {
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        table td, table th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        table tr:nth-child(even){background-color: #f2f2f2;}
+
+        table tr:hover {background-color: #ddd;}
+
+        table th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: darkslategray;
+            color: white;
+        }
+    </style>
 </head>
 <body>
 Welcome to the GOT web interface...<br>
-{{range .Symbols}}
-    <a href="" onclick="showBook('{{.}}')">{{.}}</a><br>
+<table><th>Symbol</th><th>Bid Qty</th><th>Bid Price</th><th>Ask Price</th><th>Ask Qty</th><th>Volume</th><th>Low</th><th>High</th>
+{{range .Stats}}
+        <tr>
+            <td>
+                <a href="" onclick="showBook('{{.Symbol}}')">{{.Symbol}}</a><br>
+            </td>
+            <td>
+                {{if .BidQty.IsZero}}{{else}}{{.BidQty}}{{end}}
+            </td>
+            <td>
+                {{if .BidQty.IsZero}}{{else}}{{.BidPrice}}{{end}}
+            </td>
+            <td>
+                {{if .AskQty.IsZero}}{{else}}{{.AskPrice}}{{end}}
+            </td>
+            <td>
+                {{if .AskQty.IsZero}}{{else}}{{.AskQty}}{{end}}
+            </td>
+            <td>
+                {{.Volume}}
+            </td>
+            <td>
+                {{if .HasLow}}{{.Low}}{{end}}
+            </td>
+            <td>
+                {{if .HasHigh}}{{.High}}{{end}}
+            </td>
+        </tr>
 {{end}}
+</table>
 </body>
 <script>
     function showBook(symbol) {

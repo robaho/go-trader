@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -205,7 +206,25 @@ func sessionsHandler(w http.ResponseWriter, r *http.Request) {
 
 func instrumentsHandler(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
-	data["Symbols"] = IMap.AllSymbols()
+
+	stats := make([]Statistics, 0)
+
+	for _, s := range IMap.AllSymbols() {
+		stats0 := getStatistics(IMap.GetBySymbol(s))
+		if stats0 == nil {
+			s0 := Statistics{}
+			s0.Symbol = s
+			stats = append(stats, s0)
+			continue
+		}
+		stats = append(stats, *stats0)
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Symbol < stats[j].Symbol
+	})
+
+	data["Stats"] = stats
 
 	t.Execute(w, "instruments.html", data)
 }
