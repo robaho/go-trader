@@ -52,10 +52,10 @@ Welcome to the GOT web interface...<br>
                 {{.Volume}}
             </td>
             <td>
-                {{if .HasLow}}{{.Low}}{{end}}
+                {{if .HasHighLow}}{{.Low}}{{end}}
             </td>
             <td>
-                {{if .HasHigh}}{{.High}}{{end}}
+                {{if .HasHighLow}}{{.High}}{{end}}
             </td>
         </tr>
 {{end}}

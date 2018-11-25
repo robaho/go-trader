@@ -43,6 +43,7 @@ func StartWebServer(addr string) {
 		http.HandleFunc("/instruments", instrumentsHandler)
 		http.HandleFunc("/sessions", sessionsHandler)
 		http.HandleFunc("/api/book/", authenticate(apiBookHandler))
+		http.HandleFunc("/api/stats/", authenticate(apiStatsHandler))
 		http.HandleFunc("/", welcomeHandler)
 
 		// add REST api
@@ -193,6 +194,11 @@ func bookToJSON(symbol string, book *Book) []byte {
 	return msg
 }
 
+func statsToJSON(symbol string, stats *Statistics) []byte {
+	msg, _, _ := websocket.JSON.Marshal(*stats)
+	return msg
+}
+
 func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, "welcome.html", empty{})
 }
@@ -252,5 +258,21 @@ func apiBookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		b := bookToJSON(symbol, book)
 		w.Write(b)
+	}
+}
+
+func apiStatsHandler(w http.ResponseWriter, r *http.Request) {
+	symbol := strings.TrimPrefix(r.URL.Path, "/api/stats/")
+
+	instrument := IMap.GetBySymbol(symbol)
+	if instrument == nil {
+		http.Error(w, "the symbol "+symbol+" is unknown", http.StatusNotFound)
+	} else {
+		stats := getStatistics(instrument)
+		if stats == nil {
+			stats = &Statistics{}
+		}
+		s := statsToJSON(symbol, stats)
+		w.Write(s)
 	}
 }

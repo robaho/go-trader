@@ -36,16 +36,15 @@ type MarketEvent struct {
 }
 
 type Statistics struct {
-	Symbol   string
-	BidQty   decimal.Decimal
-	BidPrice decimal.Decimal
-	AskQty   decimal.Decimal
-	AskPrice decimal.Decimal
-	Volume   decimal.Decimal
-	High     decimal.Decimal
-	HasHigh  bool
-	Low      decimal.Decimal
-	HasLow   bool
+	Symbol     string
+	BidQty     decimal.Decimal
+	BidPrice   decimal.Decimal
+	AskQty     decimal.Decimal
+	AskPrice   decimal.Decimal
+	Volume     decimal.Decimal
+	High       decimal.Decimal
+	Low        decimal.Decimal
+	HasHighLow bool
 }
 
 func subscribe(sub chan *Book) {
@@ -121,13 +120,17 @@ func publish() {
 
 		for _, t := range trades {
 			s.Volume = s.Volume.Add(t.Quantity)
-			if !s.HasHigh || t.Price.GreaterThan(s.High) {
+			if !s.HasHighLow {
 				s.High = t.Price
-				s.HasHigh = true
-			}
-			if !s.HasLow || t.Price.LessThan(s.Low) {
-				s.Low = t.Price
-				s.HasLow = true
+				s.Low = s.High
+				s.HasHighLow = true
+			} else {
+				if t.Price.GreaterThan(s.High) {
+					s.High = t.Price
+				}
+				if t.Price.LessThan(s.Low) {
+					s.Low = t.Price
+				}
 			}
 		}
 

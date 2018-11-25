@@ -43,14 +43,9 @@ client
 access full book (use guest/password to login)
 
 localhost:8080/api/book/SYMBOL
+localhost:8080/api/stats/SYMBOL
 
 # screen shots
 
 ![client screen shot](doc/clientss.png)
 ![web screen shot](doc/webss.png)
-
-# ToDos
-
-Add more REST api methods
-
- 
