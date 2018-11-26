@@ -38,6 +38,18 @@ marketmaker -symbol IBM
 
 client
 
+# Performance
+
+Using the quickfixgo connector:
+
+a market maker timing, is measure from the quote message generation, to reception of the multicast market data
+
+a single market maker can perform 6k round-trip quotes/sec
+
+4 market maker clients can perform 16k round-trip quotes/sec
+ 
+Stay tuned for performance numbers using gRPC binary connector...
+
 # REST api
 
 access full book (use guest/password to login)
