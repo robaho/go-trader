@@ -42,11 +42,12 @@ client
 
 Using the quickfixgo connector:
 
-a market maker timing, is measure from the quote message generation, to reception of the multicast market data
+- a market maker timing is measured from the quote message generation to the reception of the multicast market data
+- test machine is a 3.4 ghz i7 (4 core,8 thread), running osx
 
 a single market maker can perform 6k round-trip quotes/sec
 
-4 market maker clients can perform 16k round-trip quotes/sec
+4 market maker clients can perform 16k round-trip quotes/sec 
  
 Stay tuned for performance numbers using gRPC binary connector...
 
