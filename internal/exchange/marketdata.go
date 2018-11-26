@@ -202,7 +202,7 @@ func sendPacket(data []byte) {
 }
 
 func startMarketData() {
-	eventChannel = make(chan MarketEvent)
+	eventChannel = make(chan MarketEvent, 1000)
 	lastSentBook = make(map[Instrument]uint64)
 
 	// read settings and create socket
@@ -240,7 +240,7 @@ func startMarketData() {
 	if err != nil {
 		panic(err)
 	}
-	c.SetWriteBuffer(16 * 1024 * 1024)
+	c.SetWriteBuffer(1024 * 1024)
 
 	udpCon = c
 	pUdpCon = ipv4.NewPacketConn(udpCon)
