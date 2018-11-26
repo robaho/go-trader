@@ -38,7 +38,7 @@ marketmaker -symbol IBM
 
 client
 
-# Performance
+# performance
 
 Using the quickfixgo connector:
 
