@@ -57,6 +57,12 @@ Using the gRPC connector:
 
 **4 market makers can perform 25k round-trip quotes/sec** 
 
+Using branch 'fixed', which use the high-performance fixed point library [fixed](https://github.com/robaho/fixed), and gRPC:
+
+**1 market maker can perform 12k round-trip quotes/sec**
+
+**4 market makers can perform 30k round-trip quotes/sec** 
+
 # REST api
 
 access full book (use guest/password to login)

@@ -55,7 +55,7 @@ func main() {
 		panic("exchange is not connected")
 	}
 
-	err := exchange.DownloadInstruments()
+	err = exchange.DownloadInstruments()
 	if err != nil {
 		panic(err)
 	}
