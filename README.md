@@ -62,6 +62,7 @@ Using the gRPC connector:
 access full book (use guest/password to login)
 
 localhost:8080/api/book/SYMBOL
+
 localhost:8080/api/stats/SYMBOL
 
 # screen shots
