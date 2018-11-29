@@ -2,3 +2,8 @@ multicast_addr=224.0.0.100:9999
 multicast_intf=lo0
 replay_host=localhost
 replay_port=9999
+grpc_port=5000
+grpc_host=localhost
+# protocol sets the client connect protocol, the server always enables both
+# grpc|fix
+protocol=fix

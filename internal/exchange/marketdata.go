@@ -251,9 +251,11 @@ func startMarketData() {
 	}()
 
 	go func() {
-		ln, err := net.Listen("tcp", ":"+rport)
+		ln, err := net.Listen("tcp", "0.0.0.0:"+rport)
 		if err != nil {
 			log.Fatal("unable to listen on replay port", err)
+		} else {
+			log.Println("listening for replay requests on", ln.Addr())
 		}
 		for {
 			conn, _ := ln.Accept()
@@ -263,10 +265,12 @@ func startMarketData() {
 				for {
 					err := binary.Read(conn, binary.LittleEndian, &request)
 					if err != nil {
+						log.Println("failure to read replay request", err)
 						return
 					}
 					err = resendPackets(conn, request)
 					if err != nil {
+						log.Println("failure to resend replay packets", err)
 						return
 					}
 				}

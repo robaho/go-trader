@@ -4,6 +4,11 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/robaho/go-trader/pkg/protocol"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+	"log"
+	"net"
 	"os"
 	"runtime"
 	"strings"
@@ -22,13 +27,19 @@ func main() {
 	runtime.GOMAXPROCS(8)
 
 	fix := flag.String("fix", "configs/qf_got_settings", "set the fix session file")
+	props := flag.String("props", "configs/got_settings", "set the exchange properties file")
 	instruments := flag.String("instruments", "configs/instruments.txt", "the instrument file")
 	port := flag.String("port", "8080", "set the web server port")
 	profile := flag.Bool("profile", false, "create CPU profiling output")
 
 	flag.Parse()
 
-	err := common.IMap.Load(*instruments)
+	p, err := common.NewProperties(*props)
+	if err != nil {
+		fmt.Println("unable to exchange properties", err)
+	}
+
+	err = common.IMap.Load(*instruments)
 	if err != nil {
 		fmt.Println("unable to load instruments", err)
 	}
@@ -61,6 +72,27 @@ func main() {
 
 	_ = acceptor.Start()
 	defer acceptor.Stop()
+
+	// start grpc protocol
+
+	grpc_port := p.GetString("grpc_port", "5000")
+
+	lis, err := net.Listen("tcp", ":"+grpc_port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	} else {
+		log.Println("accepting grpc connections at ", lis.Addr())
+	}
+	s := grpc.NewServer()
+	protocol.RegisterExchangeServer(s, exchange.NewGrpcServer())
+	// Register reflection service on gRPC server.
+	reflection.Register(s)
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
 
 	exchange.StartWebServer(":" + *port)
 	fmt.Println("web server access available at :" + *port)

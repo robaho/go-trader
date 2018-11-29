@@ -36,12 +36,19 @@ func main() {
 	var callback = MyCallback{}
 
 	fix := flag.String("fix", "configs/qf_playback_settings", "set the fix session file")
+	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 	speed := flag.Float64("speed", 1.0, "set the playback speed")
 	playback := flag.String("file", "playback.txt", "set the playback file")
 
 	flag.Parse()
 
-	var exchange = connector.NewConnector(&callback, *fix, nil)
+	p, err := NewProperties(*props)
+	if err != nil {
+		panic(err)
+	}
+	p.SetString("fix", *fix)
+
+	var exchange = connector.NewConnector(&callback, p, nil)
 
 	exchange.Connect()
 	if !exchange.IsConnected() {

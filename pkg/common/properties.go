@@ -11,19 +11,25 @@ import (
 
 type Properties interface {
 	GetString(key string, def string) string
+	SetString(key string, value string)
 }
 
 type properties struct {
 	props map[string]string
 }
 
-func (p properties) GetString(key string, def string) string {
+func (p *properties) GetString(key string, def string) string {
 	key = strings.TrimSpace(key)
 	v, ok := p.props[key]
 	if !ok {
 		return def
 	}
 	return v
+}
+
+func (p *properties) SetString(key string, value string) {
+	key = strings.TrimSpace(key)
+	p.props[key] = value
 }
 
 func NewProperties(file string) (Properties, error) {
@@ -51,5 +57,5 @@ func NewPropertiesFromReader(r io.Reader) (Properties, error) {
 		}
 		p.props[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
 	}
-	return p, nil
+	return &p, nil
 }

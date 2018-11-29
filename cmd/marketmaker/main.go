@@ -16,13 +16,13 @@ import (
 )
 
 type MyCallback struct {
-	cond   *sync.Cond
+	wg     sync.WaitGroup
 	symbol string
 }
 
 func (cb *MyCallback) OnBook(book *Book) {
 	if book.Instrument.Symbol() == cb.symbol {
-		cb.cond.Signal()
+		cb.wg.Done()
 	}
 }
 
@@ -42,24 +42,34 @@ func (*MyCallback) OnTrade(trade *Trade) {
 
 func main() {
 	var callback = MyCallback{}
-	callback.cond = sync.NewCond(&sync.Mutex{})
 
 	symbol := flag.String("symbol", "IBM", "set the symbol")
 	fix := flag.String("fix", "configs/qf_mm1_settings", "set the fix session file")
+	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 	delay := flag.Int("delay", 0, "set the delay in ms after each quote, 0 to disable")
+	proto := flag.String("proto", "", "override protocol, grpc or fix")
 
 	flag.Parse()
 
 	callback.symbol = *symbol
 
-	var exchange = connector.NewConnector(&callback, *fix, nil)
+	p, err := NewProperties(*props)
+	if err != nil {
+		panic(err)
+	}
+	if *proto != "" {
+		p.SetString("protocol", *proto)
+	}
+	p.SetString("fix", *fix)
+
+	var exchange = connector.NewConnector(&callback, p, nil)
 
 	exchange.Connect()
 	if !exchange.IsConnected() {
 		panic("exchange is not connected")
 	}
 
-	err := exchange.DownloadInstruments()
+	err = exchange.DownloadInstruments()
 	if err != nil {
 		panic(err)
 	}
@@ -113,13 +123,15 @@ func main() {
 
 		now := time.Now()
 		if delta != 0 {
+			if bidPrice.Equal(askPrice) {
+				panic("bid price equals ask price")
+			}
+			callback.wg.Add(1)
 			err := exchange.Quote(instrument, bidPrice, bidQty, askPrice, askQty)
 			if err != nil {
-				fmt.Println("unable to submit quote: " + err.Error())
+				log.Fatal("unable to submit quote", err)
 			}
-			callback.cond.L.Lock()
-			callback.cond.Wait()
-			callback.cond.L.Unlock()
+			callback.wg.Wait()
 		}
 		h.Add(float64(time.Now().Sub(now).Nanoseconds()))
 		if *delay != 0 {

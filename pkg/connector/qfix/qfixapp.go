@@ -1,4 +1,4 @@
-package connector
+package qfix
 
 import (
 	"fmt"
@@ -13,10 +13,10 @@ import (
 
 type myApplication struct {
 	*quickfix.MessageRouter
-	c *connector
+	c *qfixConnector
 }
 
-func newApplication(c *connector) *myApplication {
+func newApplication(c *qfixConnector) *myApplication {
 	app := new(myApplication)
 	app.MessageRouter = quickfix.NewMessageRouter()
 	app.AddRoute(executionreport.Route(app.onExecutionReport))

@@ -26,23 +26,36 @@ var endOfDownload = NewInstrument(0, "endofdownload")
 type myApplication struct {
 	*quickfix.MessageRouter
 	e            *exchange
-	sessionIDs   sync.Map
 	lock         sync.Mutex
 	instrumentID int64
+}
+
+type fixClient struct {
+	sessionID quickfix.SessionID
+}
+
+func (c fixClient) SendOrderStatus(so sessionOrder) {
+	App.sendExecutionReport(enum.ExecType_ORDER_STATUS, so)
+}
+func (c fixClient) SendTrades(trades []trade) {
+	App.sendExecutionReports(trades)
+}
+func (c fixClient) SessionID() string {
+	return c.sessionID.String()
 }
 
 func (app *myApplication) OnCreate(sessionID quickfix.SessionID) {
 }
 
 func (app *myApplication) OnLogon(sessionID quickfix.SessionID) {
-	s := newSession(sessionID.String())
-	App.sessionIDs.Store(s.id, sessionID)
-	app.e.sessions.Store(s.id, &s)
+	c := fixClient{sessionID: sessionID}
+	app.e.newSession(c)
 	fmt.Println("login, sessions are ", app.e.ListSessions())
 }
 
 func (app *myApplication) OnLogout(sessionID quickfix.SessionID) {
-	app.e.SessionDisconnect(sessionID.String())
+	c := fixClient{sessionID: sessionID}
+	app.e.SessionDisconnect(c)
 	fmt.Println("logout, sessions are ", app.e.ListSessions())
 }
 
@@ -101,7 +114,9 @@ func (app *myApplication) onNewOrderSingle(msg newordersingle.NewOrderSingle, se
 		order = MarketOrder(instrument, MapFromFixSide(side), qty)
 	}
 	order.Id = NewOrderID(clOrdId)
-	app.e.CreateOrder(sessionID.String(), order)
+
+	c := fixClient{sessionID: sessionID}
+	app.e.CreateOrder(c, order)
 
 	return nil
 
@@ -111,7 +126,8 @@ func (app *myApplication) onOrderCancelRequest(msg ordercancelrequest.OrderCance
 	if err != nil {
 		return err
 	}
-	app.e.CancelOrder(sessionID.String(), NewOrderID(clOrdId))
+	c := fixClient{sessionID: sessionID}
+	app.e.CancelOrder(c, NewOrderID(clOrdId))
 
 	return nil
 }
@@ -129,7 +145,8 @@ func (app *myApplication) onOrderCancelReplaceRequest(msg ordercancelreplacerequ
 	if err != nil {
 		return err
 	}
-	app.e.ModifyOrder(sessionID.String(), NewOrderID(clOrdId), price, qty)
+	c := fixClient{sessionID: sessionID}
+	app.e.ModifyOrder(c, NewOrderID(clOrdId), price, qty)
 
 	return nil
 }
@@ -174,7 +191,8 @@ func (app *myApplication) onMassQuote(msg massquote.MassQuote, sessionID quickfi
 		return err
 	}
 
-	app.e.Quote(sessionID.String(), instrument, bidPrice, bidQty, offerPrice, offerQty)
+	c := fixClient{sessionID: sessionID}
+	app.e.Quote(c, instrument, bidPrice, bidQty, offerPrice, offerQty)
 
 	return nil
 }
@@ -229,7 +247,7 @@ func (app *myApplication) sendInstrument(instrument Instrument, reqid string, se
 	msg.SetSymbol(instrument.Symbol())
 	msg.SetSecurityID(strconv.FormatInt(instrument.ID(), 10))
 
-	quickfix.SendToTarget(msg, getSessionID(sessionID.String()))
+	quickfix.SendToTarget(msg, sessionID)
 }
 
 func (app *myApplication) sendTradeExecutionReport(so sessionOrder, price decimal.Decimal, qty decimal.Decimal, remaining decimal.Decimal) {
@@ -261,7 +279,7 @@ func (app *myApplication) sendTradeExecutionReport(so sessionOrder, price decima
 	msg.SetLastPx(price, 4)
 	msg.SetLastQty(qty, 4)
 
-	quickfix.SendToTarget(msg, getSessionID(so.session))
+	quickfix.SendToTarget(msg, so.client.(fixClient).sessionID)
 }
 
 func (app *myApplication) sendExecutionReport(execType enum.ExecType, so sessionOrder) {
@@ -283,7 +301,7 @@ func (app *myApplication) sendExecutionReport(execType enum.ExecType, so session
 	msg.SetOrderQty(order.Quantity, 4)
 	msg.SetSymbol(order.Instrument.Symbol())
 
-	quickfix.SendToTarget(msg, getSessionID(so.session))
+	quickfix.SendToTarget(msg, so.client.(fixClient).sessionID)
 }
 
 func (app *myApplication) sendExecutionReports(trades []trade) {
@@ -305,10 +323,4 @@ func init() {
 	App.AddRoute(securitylistrequest.Route(App.onSecurityListRequest))
 
 	App.instrumentID = 1000000 // start high for dynamic instruments
-}
-
-func getSessionID(session string) quickfix.SessionID {
-	id, _ := App.sessionIDs.Load(session)
-	return id.(quickfix.SessionID)
-
 }

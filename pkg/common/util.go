@@ -19,6 +19,11 @@ func ParseInt(s string) int {
 	return i
 }
 
+func ToFloat(d decimal.Decimal) float64 {
+	f, _ := d.Float64()
+	return f
+}
+
 var overflow = errors.New("binary: varint overflows a 64-bit integer")
 
 // ReadUvarint reads an encoded unsigned integer from r and returns it as a uint64.

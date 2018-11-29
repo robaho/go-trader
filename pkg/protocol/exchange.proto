@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package protocol;
+
+service Exchange {
+    rpc Connection (stream InMessage) returns (stream OutMessage) {}
+}
+
+message InMessage {
+    oneof request {
+        LoginRequest login = 1;
+        CreateOrderRequest create = 2;
+        ModifyOrderRequest modify = 3;
+        CancelOrderRequest cancel = 4;
+        MassQuoteRequest massquote = 5;
+        SecurityDefinitionRequest secdefreq = 6;
+        DownloadRequest download = 7;
+    }
+}
+
+message OutMessage {
+    oneof reply {
+        LoginReply login = 1;
+        ExecutionReport execrpt = 2;
+        SecurityDefinition secdef = 3;
+        SessionReject reject = 4;
+    }
+}
+
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message LoginReply {
+    string error = 2;
+}
+
+message CreateOrderRequest {
+    int32 clOrdId = 1;
+    string symbol = 2;
+    double price = 3;
+    double quantity = 4;
+    enum OrderType {
+        Market = 0;
+        Limit = 1;
+    }
+    enum OrderSide {
+        Buy = 0;
+        Sell = 1;
+    }
+    OrderType orderType = 5;
+    OrderSide orderSide = 6;
+}
+
+message ModifyOrderRequest {
+    int32 clOrdId = 1;
+    double price = 2;
+    double quantity = 3;
+}
+
+message CancelOrderRequest {
+    int32 clOrdId = 1;
+}
+
+message MassQuoteRequest {
+    string symbol = 1;
+    double bidPrice = 2;
+    double bidQuantity = 3;
+    double askPrice = 4;
+    double askQuantity = 5;
+}
+
+message SecurityDefinitionRequest {
+    string symbol = 1;
+}
+
+message DownloadRequest {
+}
+
+message SecurityDefinition {
+    string symbol = 1;
+    int64 instrumentID = 2;
+}
+
+message ExecutionReport {
+    string Symbol = 1;
+    int32 clOrdId = 2;
+    string exOrdId = 3;
+    enum OrderState {
+        Booked=0;
+        Rejected=1;
+        Partial=2;
+        Filled=3;
+        Cancelled=4;
+    }
+    OrderState orderState = 4;
+    enum ReportType {
+        Status = 0;
+        Fill = 1;
+    }
+    ReportType reportType = 5;
+    double price = 6;
+    double quantity = 7;
+    double remaining = 8;
+    double lastPrice = 9;
+    double lastQuantity = 10;
+    CreateOrderRequest.OrderSide side = 11;
+    string rejectReason=12;
+}
+
+message SessionReject {
+    string error = 1;
+}

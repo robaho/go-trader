@@ -381,8 +381,15 @@ func main() {
 	var callback = MyCallback{}
 
 	fix := flag.String("fix", "configs/qf_client_settings", "set the fix session file")
+	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 
 	flag.Parse()
+
+	p, err := NewProperties(*props)
+	if err != nil {
+		panic(err)
+	}
+	p.SetString("fix", *fix)
 
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
@@ -402,7 +409,7 @@ func main() {
 		log.Panicln(err)
 	}
 
-	exchange = connector.NewConnector(callback, *fix, viewLogger{})
+	exchange = connector.NewConnector(callback, p, viewLogger{})
 
 	exchange.Connect()
 	if !exchange.IsConnected() {

@@ -112,6 +112,7 @@ func main() {
 
 	symbol := flag.String("symbol", "IBM", "set the symbol")
 	fix := flag.String("fix", "configs/qf_algo_settings", "set the fix session file")
+	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 	offset := flag.Float64("offset", 1.0, "price offset for entry exit")
 
 	flag.Parse()
@@ -119,7 +120,13 @@ func main() {
 	callback.symbol = *symbol
 	callback.offset = decimal.NewFromFloat(*offset)
 
-	exchange = connector.NewConnector(&callback, *fix, nil)
+	p, err := NewProperties(*props)
+	if err != nil {
+		panic(err)
+	}
+	p.SetString("fix", *fix)
+
+	exchange = connector.NewConnector(&callback, p, nil)
 
 	exchange.Connect()
 	if !exchange.IsConnected() {
