@@ -9,9 +9,12 @@ import (
 // very simplified structure, only one book and associated trades per UDP packet, and it contains the complete book
 // currently it all needs to fit in a single packet or it won't work, although straightforward to send additional trade packets
 
+var placeholder [8]byte
+
 func EncodeMarketEvent(book *Book, trades []Trade) []byte {
 
 	buf := new(bytes.Buffer)
+	buf.Write(placeholder[:]) // leave room for packet number
 	PutVarint(buf, book.Instrument.ID())
 	if book != nil {
 		buf.WriteByte(1) // has book

@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"bytes"
 	"container/list"
 	"encoding/binary"
 	"fmt"
@@ -186,12 +185,7 @@ func sendPacket(data []byte) {
 
 	packetNumber++
 
-	b := bytes.Buffer{}
-
-	binary.Write(&b, binary.LittleEndian, packetNumber)
-	b.Write(data)
-
-	data = b.Bytes()
+	binary.LittleEndian.PutUint64(data, packetNumber)
 
 	_, err := udpCon.Write(data)
 	if err != nil {
@@ -293,10 +287,6 @@ var history PacketHistory
 func rememberPacket(packetNumber uint64, data []byte) {
 	history.Lock()
 	defer history.Unlock()
-
-	p := new(Packet)
-	p.number = packetNumber
-	p.data = make([]byte, len(data))
 
 	if history.packets.Len() > 10000 {
 		history.packets.Remove(history.packets.Front())
