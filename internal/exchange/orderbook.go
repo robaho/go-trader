@@ -1,6 +1,9 @@
 package exchange
 
-import "sync"
+import (
+	. "github.com/robaho/fixed"
+	"sync"
+)
 import (
 	"fmt"
 	"sort"
@@ -8,7 +11,6 @@ import (
 	"time"
 
 	. "github.com/robaho/go-trader/pkg/common"
-	"github.com/shopspring/decimal"
 )
 
 type orderBook struct {
@@ -21,13 +23,13 @@ type orderBook struct {
 type trade struct {
 	buyer    sessionOrder
 	seller   sessionOrder
-	price    decimal.Decimal
-	quantity decimal.Decimal
+	price    Fixed
+	quantity Fixed
 	tradeid  int64
 	when     time.Time
 
-	buyRemaining  decimal.Decimal
-	sellRemaining decimal.Decimal
+	buyRemaining  Fixed
+	sellRemaining Fixed
 }
 
 func (ob *orderBook) String() string {
@@ -82,7 +84,7 @@ func matchTrades(book *orderBook) []trade {
 			break
 		}
 
-		var price decimal.Decimal
+		var price Fixed
 		// need to use price of resting order
 		if bid.time.Before(ask.time) {
 			price = bid.order.Price
@@ -90,7 +92,7 @@ func matchTrades(book *orderBook) []trade {
 			price = ask.order.Price
 		}
 
-		var qty = decimal.Min(bid.order.Remaining, ask.order.Remaining)
+		var qty = MinDecimal(bid.order.Remaining, ask.order.Remaining)
 
 		var trade = trade{}
 
@@ -114,19 +116,19 @@ func matchTrades(book *orderBook) []trade {
 
 		trades = append(trades, trade)
 
-		if bid.order.Remaining.Equals(ZERO) {
+		if bid.order.Remaining.Equal(ZERO) {
 			book.remove(bid)
 		}
-		if ask.order.Remaining.Equals(ZERO) {
+		if ask.order.Remaining.Equal(ZERO) {
 			book.remove(ask)
 		}
 	}
 	return trades
 }
 
-func fill(order *Order, qty decimal.Decimal, price decimal.Decimal) {
+func fill(order *Order, qty Fixed, price Fixed) {
 	order.Remaining = order.Remaining.Sub(qty)
-	if order.Remaining.Equals(ZERO) {
+	if order.Remaining.Equal(ZERO) {
 		order.OrderState = Filled
 	} else {
 		order.OrderState = PartialFill
@@ -182,10 +184,10 @@ func createBookLevels(orders []sessionOrder) []BookLevel {
 	}
 
 	price := orders[0].order.Price
-	quantity := decimal.Zero
+	quantity := ZERO
 
 	for _, v := range orders {
-		if v.order.Price.Equals(price) {
+		if v.order.Price.Equal(price) {
 			quantity = quantity.Add(v.order.Remaining)
 		} else {
 			bl := BookLevel{Price: price, Quantity: quantity}

@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	. "github.com/robaho/fixed"
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/robaho/go-trader/pkg/protocol"
 	"github.com/shopspring/decimal"
@@ -202,7 +203,7 @@ func (c *grpcConnector) CreateOrder(order *Order) (OrderID, error) {
 	return orderID, err
 }
 
-func (c *grpcConnector) ModifyOrder(id OrderID, price decimal.Decimal, quantity decimal.Decimal) error {
+func (c *grpcConnector) ModifyOrder(id OrderID, price Fixed, quantity Fixed) error {
 	if !c.loggedIn.IsTrue() {
 		return NotConnected
 	}
@@ -245,7 +246,7 @@ func (c *grpcConnector) CancelOrder(id OrderID) error {
 	return err
 }
 
-func (c *grpcConnector) Quote(instrument Instrument, bidPrice decimal.Decimal, bidQuantity decimal.Decimal, askPrice decimal.Decimal, askQuantity decimal.Decimal) error {
+func (c *grpcConnector) Quote(instrument Instrument, bidPrice Fixed, bidQuantity Fixed, askPrice Fixed, askQuantity Fixed) error {
 
 	if !c.loggedIn.IsTrue() {
 		return NotConnected
@@ -317,9 +318,9 @@ func (c *grpcConnector) handleExecutionReport(rpt *protocol.ExecutionReport) {
 		defer order.Unlock()
 
 		order.ExchangeId = exchangeId
-		order.Remaining = decimal.NewFromFloat(rpt.Remaining)
-		order.Price = decimal.NewFromFloat(rpt.Price)
-		order.Quantity = decimal.NewFromFloat(rpt.Quantity)
+		order.Remaining = NewDecimalF(rpt.Remaining)
+		order.Price = NewDecimalF(rpt.Price)
+		order.Quantity = NewDecimalF(rpt.Quantity)
 
 		order.OrderState = state
 	}

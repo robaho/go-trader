@@ -2,32 +2,47 @@ package common
 
 import (
 	"errors"
-	"github.com/shopspring/decimal"
+	. "github.com/robaho/fixed"
 	"io"
 	"strconv"
 	"time"
 )
 
-var ZERO = decimal.NewFromFloat(0.0)
-
-func NewDecimal(s string) decimal.Decimal {
-	d, _ := decimal.NewFromString(s)
-	return d
+func NewDecimal(s string) Fixed {
+	return NewS(s)
+}
+func NewDecimalF(f float64) Fixed {
+	return NewF(f)
+}
+func MinDecimal(d0 Fixed, d1 Fixed) Fixed {
+	if d0.LessThan(d1) {
+		return d0
+	} else {
+		return d1
+	}
 }
 func ParseInt(s string) int {
 	i, _ := strconv.Atoi(s)
 	return i
 }
 
-func ToFloat(d decimal.Decimal) float64 {
-	f, _ := d.Float64()
-	return f
+func ToFloat(d Fixed) float64 {
+	return d.Float()
 }
 
 var overflow = errors.New("binary: varint overflows a 64-bit integer")
 
+type ByteReader interface {
+	io.Reader
+	io.ByteReader
+}
+type ByteWriter interface {
+	io.Writer
+	io.ByteWriter
+}
+
 // ReadUvarint reads an encoded unsigned integer from r and returns it as a uint64.
-func ReadUvarint(r io.ByteReader) (uint64, error) {
+func ReadUvarint(r ByteReader) (uint64, error) {
 	var x uint64
 	var s uint
 	for i := 0; ; i++ {
@@ -47,7 +62,7 @@ func ReadUvarint(r io.ByteReader) (uint64, error) {
 }
 
 // ReadVarint reads an encoded signed integer from r and returns it as an int64.
-func ReadVarint(r io.ByteReader) (int64, error) {
+func ReadVarint(r ByteReader) (int64, error) {
 	ux, err := ReadUvarint(r) // ok to continue in presence of error
 	x := int64(ux >> 1)
 	if ux&1 != 0 {
@@ -57,7 +72,7 @@ func ReadVarint(r io.ByteReader) (int64, error) {
 }
 
 // PutUvarint encodes a uint64 into buf and returns the number of bytes written.
-func PutUvarint(w io.ByteWriter, x uint64) int {
+func PutUvarint(w ByteWriter, x uint64) int {
 	i := 0
 	for x >= 0x80 {
 		w.WriteByte(byte(x) | 0x80)
@@ -69,7 +84,7 @@ func PutUvarint(w io.ByteWriter, x uint64) int {
 }
 
 // PutVarint encodes an int64 into buf and returns the number of bytes written.
-func PutVarint(w io.ByteWriter, x int64) int {
+func PutVarint(w ByteWriter, x int64) int {
 	ux := uint64(x) << 1
 	if x < 0 {
 		ux = ^ux
@@ -77,28 +92,23 @@ func PutVarint(w io.ByteWriter, x int64) int {
 	return PutUvarint(w, ux)
 }
 
-func EncodeDecimal(w io.ByteWriter, d decimal.Decimal) {
-	var exp int64 = int64(d.Exponent())
-	var coef int64 = d.Coefficient().Int64()
-	PutVarint(w, exp)
-	PutVarint(w, coef)
+func EncodeDecimal(w ByteWriter, d Fixed) {
+	PutVarint(w, d.ToRaw())
 }
 
-func DecodeDecimal(r io.ByteReader) decimal.Decimal {
-	exp, _ := ReadVarint(r)
-	coef, _ := ReadVarint(r)
-
-	return decimal.New(coef, int32(exp))
+func DecodeDecimal(r ByteReader) Fixed {
+	i, _ := ReadVarint(r)
+	return FromRaw(i)
 }
 
-func EncodeString(w io.ByteWriter, s string) {
+func EncodeString(w ByteWriter, s string) {
 	bytes := []byte(s)
 	w.WriteByte(byte(len(bytes)))
 	for i := 0; i < len(bytes); i++ {
 		w.WriteByte(bytes[i])
 	}
 }
-func DecodeString(r io.ByteReader) string {
+func DecodeString(r ByteReader) string {
 	len, _ := r.ReadByte()
 	bytes := make([]byte, 0)
 	for i := 0; i < int(len); i++ {
@@ -107,10 +117,10 @@ func DecodeString(r io.ByteReader) string {
 	}
 	return string(bytes)
 }
-func EncodeTime(w io.ByteWriter, time time.Time) {
+func EncodeTime(w ByteWriter, time time.Time) {
 	PutVarint(w, time.UnixNano())
 }
-func DecodeTime(r io.ByteReader) time.Time {
+func DecodeTime(r ByteReader) time.Time {
 	ns, _ := ReadVarint(r)
 	return time.Unix(0, ns)
 }

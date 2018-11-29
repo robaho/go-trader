@@ -5,7 +5,7 @@ import (
 	"container/list"
 	"encoding/binary"
 	"fmt"
-	"github.com/shopspring/decimal"
+	. "github.com/robaho/fixed"
 	"golang.org/x/net/ipv4"
 	"log"
 	"net"
@@ -37,13 +37,13 @@ type MarketEvent struct {
 
 type Statistics struct {
 	Symbol     string
-	BidQty     decimal.Decimal
-	BidPrice   decimal.Decimal
-	AskQty     decimal.Decimal
-	AskPrice   decimal.Decimal
-	Volume     decimal.Decimal
-	High       decimal.Decimal
-	Low        decimal.Decimal
+	BidQty     Fixed
+	BidPrice   Fixed
+	AskQty     Fixed
+	AskPrice   Fixed
+	Volume     Fixed
+	High       Fixed
+	Low        Fixed
 	HasHighLow bool
 }
 
@@ -168,7 +168,7 @@ func coalesceTrades(trades []trade) []Trade {
 	// coalesce all trades at same price
 	last := 0
 	for i, v := range trades {
-		if i > 0 && v.price.Equals(Trades[last].Price) {
+		if i > 0 && v.price.Equal(Trades[last].Price) {
 			Trades[last].Quantity = Trades[last].Quantity.Add(v.quantity)
 			continue
 		}

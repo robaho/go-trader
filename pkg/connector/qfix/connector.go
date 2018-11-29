@@ -3,6 +3,7 @@ package qfix
 import (
 	"github.com/quickfixgo/fix44/securitydefinitionrequest"
 	"github.com/quickfixgo/fix44/securitylistrequest"
+	. "github.com/robaho/fixed"
 	"io"
 	"os"
 	"strconv"
@@ -18,7 +19,6 @@ import (
 	"github.com/quickfixgo/fix44/ordercancelrequest"
 	"github.com/quickfixgo/quickfix"
 	. "github.com/robaho/go-trader/pkg/common"
-	"github.com/shopspring/decimal"
 )
 
 type qfixConnector struct {
@@ -161,13 +161,13 @@ func (c *qfixConnector) CreateOrder(order *Order) (OrderID, error) {
 
 	fixOrder := newordersingle.New(field.NewClOrdID(orderID.String()), field.NewSide(MapToFixSide(order.Side)), field.NewTransactTime(time.Now()), ordtype)
 	fixOrder.SetSymbol(order.Instrument.Symbol())
-	fixOrder.SetOrderQty(order.Quantity, 4)
-	fixOrder.SetPrice(order.Price, 4)
+	fixOrder.SetOrderQty(ToDecimal(order.Quantity), 4)
+	fixOrder.SetPrice(ToDecimal(order.Price), 4)
 
 	return orderID, quickfix.SendToTarget(fixOrder, c.sessionID)
 }
 
-func (c *qfixConnector) ModifyOrder(id OrderID, price decimal.Decimal, quantity decimal.Decimal) error {
+func (c *qfixConnector) ModifyOrder(id OrderID, price Fixed, quantity Fixed) error {
 	if !c.loggedIn.IsTrue() {
 		return NotConnected
 	}
@@ -187,8 +187,8 @@ func (c *qfixConnector) ModifyOrder(id OrderID, price decimal.Decimal, quantity 
 	msg := ordercancelreplacerequest.New(field.NewOrigClOrdID(id.String()), field.NewClOrdID(id.String()), field.NewSide(MapToFixSide(order.Side)), field.NewTransactTime(time.Now()), ordtype)
 
 	msg.SetSymbol(order.Instrument.Symbol())
-	msg.SetOrderQty(order.Quantity, 4)
-	msg.SetPrice(order.Price, 4)
+	msg.SetOrderQty(ToDecimal(order.Quantity), 4)
+	msg.SetPrice(ToDecimal(order.Price), 4)
 
 	return quickfix.SendToTarget(msg, c.sessionID)
 }
@@ -209,7 +209,7 @@ func (c *qfixConnector) CancelOrder(id OrderID) error {
 	return quickfix.SendToTarget(msg, c.sessionID)
 }
 
-func (c *qfixConnector) Quote(instrument Instrument, bidPrice decimal.Decimal, bidQuantity decimal.Decimal, askPrice decimal.Decimal, askQuantity decimal.Decimal) error {
+func (c *qfixConnector) Quote(instrument Instrument, bidPrice Fixed, bidQuantity Fixed, askPrice Fixed, askQuantity Fixed) error {
 
 	if !c.loggedIn.IsTrue() {
 		return NotConnected
@@ -227,10 +227,10 @@ func (c *qfixConnector) Quote(instrument Instrument, bidPrice decimal.Decimal, b
 
 	qe.SetQuoteEntryID(instrument.Symbol())
 	qe.SetSymbol(instrument.Symbol())
-	qe.SetBidSize(bidQuantity, 4)
-	qe.SetBidPx(bidPrice, 4)
-	qe.SetOfferSize(askQuantity, 4)
-	qe.SetOfferPx(askPrice, 4)
+	qe.SetBidSize(ToDecimal(bidQuantity), 4)
+	qe.SetBidPx(ToDecimal(bidPrice), 4)
+	qe.SetOfferSize(ToDecimal(askQuantity), 4)
+	qe.SetOfferPx(ToDecimal(askPrice), 4)
 
 	qs.SetNoQuoteEntries(qeg)
 	m.SetNoQuoteSets(qsg)

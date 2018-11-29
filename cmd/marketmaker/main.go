@@ -12,7 +12,6 @@ import (
 	"github.com/VividCortex/gohistogram"
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/robaho/go-trader/pkg/connector"
-	"github.com/shopspring/decimal"
 )
 
 type MyCallback struct {
@@ -109,8 +108,8 @@ func main() {
 		}
 
 		for {
-			bidPrice = bidPrice.Add(decimal.NewFromFloat(float64(delta) * .25))
-			askPrice = askPrice.Add(decimal.NewFromFloat(float64(delta) * .25))
+			bidPrice = bidPrice.Add(NewDecimalF(float64(delta) * .25))
+			askPrice = askPrice.Add(NewDecimalF(float64(delta) * .25))
 
 			if bidPrice.LessThan(lowLim) {
 				delta = 1

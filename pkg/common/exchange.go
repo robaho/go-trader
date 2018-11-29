@@ -2,6 +2,7 @@ package common
 
 import (
 	"errors"
+	. "github.com/robaho/fixed"
 	"github.com/shopspring/decimal"
 	"time"
 )
@@ -12,10 +13,10 @@ type ExchangeConnector interface {
 	Disconnect() error
 
 	CreateOrder(order *Order) (OrderID, error)
-	ModifyOrder(order OrderID, price decimal.Decimal, quantity decimal.Decimal) error
+	ModifyOrder(order OrderID, price Fixed, quantity Fixed) error
 	CancelOrder(order OrderID) error
 
-	Quote(instrument Instrument, bidPrice decimal.Decimal, bidQuantity decimal.Decimal, askPrice decimal.Decimal, askQuantity decimal.Decimal) error
+	Quote(instrument Instrument, bidPrice Fixed, bidQuantity Fixed, askPrice Fixed, askQuantity Fixed) error
 
 	GetExchangeCode() string
 
@@ -43,8 +44,8 @@ type Fill struct {
 // an exchange trade, not necessarily initiated by the current client
 type Trade struct {
 	Instrument Instrument
-	Quantity   decimal.Decimal
-	Price      decimal.Decimal
+	Quantity   Fixed
+	Price      Fixed
 	ExchangeID string
 	TradeTime  time.Time
 }

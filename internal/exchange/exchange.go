@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"fmt"
+	. "github.com/robaho/fixed"
 	"strconv"
 	"strings"
 	"sync"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	. "github.com/robaho/go-trader/pkg/common"
-	"github.com/shopspring/decimal"
 )
 
 type sessionOrder struct {
@@ -45,7 +45,7 @@ var buyMarketPrice = NewDecimal("9999999999999")
 var sellMarketPrice = ZERO
 
 // return the "effective price" of an order - so market orders can always be at the top
-func (so *sessionOrder) getPrice() decimal.Decimal {
+func (so *sessionOrder) getPrice() Fixed {
 	if so.order.OrderType == Market {
 		if so.order.Side == Buy {
 			return buyMarketPrice
@@ -132,7 +132,7 @@ func (e *exchange) CreateOrder(client exchangeClient, order *Order) (OrderID, er
 	return orderID, nil
 }
 
-func (e *exchange) ModifyOrder(client exchangeClient, orderId OrderID, price decimal.Decimal, quantity decimal.Decimal) error {
+func (e *exchange) ModifyOrder(client exchangeClient, orderId OrderID, price Fixed, quantity Fixed) error {
 	s := e.lockSession(client)
 	defer s.Unlock()
 
@@ -192,7 +192,7 @@ func (e *exchange) CancelOrder(client exchangeClient, orderId OrderID) error {
 	return nil
 }
 
-func (e *exchange) Quote(client exchangeClient, instrument Instrument, bidPrice decimal.Decimal, bidQuantity decimal.Decimal, askPrice decimal.Decimal, askQuantity decimal.Decimal) error {
+func (e *exchange) Quote(client exchangeClient, instrument Instrument, bidPrice Fixed, bidQuantity Fixed, askPrice Fixed, askQuantity Fixed) error {
 	ob := e.lockOrderBook(instrument)
 	defer ob.Unlock()
 
@@ -213,7 +213,7 @@ func (e *exchange) Quote(client exchangeClient, instrument Instrument, bidPrice 
 		qp = quotePair{}
 	}
 	var trades []trade
-	if bidPrice != ZERO {
+	if !bidPrice.IsZero() {
 		order := LimitOrder(instrument, Buy, bidPrice, bidQuantity)
 		order.ExchangeId = "quote.bid." + strconv.FormatInt(instrument.ID(), 10)
 		so := sessionOrder{client, order, time.Now()}
@@ -223,7 +223,7 @@ func (e *exchange) Quote(client exchangeClient, instrument Instrument, bidPrice 
 			trades = append(trades, bidTrades...)
 		}
 	}
-	if askPrice != ZERO {
+	if !askPrice.IsZero() {
 		order := LimitOrder(instrument, Sell, askPrice, askQuantity)
 		order.ExchangeId = "quote.ask." + strconv.FormatInt(instrument.ID(), 10)
 		so := sessionOrder{client, order, time.Now()}

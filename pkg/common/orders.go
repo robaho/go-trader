@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/shopspring/decimal"
+	. "github.com/robaho/fixed"
 	"strconv"
 	"sync"
 )
@@ -43,10 +43,10 @@ type Order struct {
 	Instrument
 	Id         OrderID
 	ExchangeId string
-	Price      decimal.Decimal
+	Price      Fixed
 	Side
-	Quantity  decimal.Decimal
-	Remaining decimal.Decimal
+	Quantity  Fixed
+	Remaining Fixed
 	OrderType
 	OrderState
 	RejectReason string
@@ -64,20 +64,20 @@ func (order *Order) IsActive() bool {
 	return order.OrderState != Filled && order.OrderState != Cancelled && order.OrderState != Rejected
 }
 
-func MarketOrder(instrument Instrument, side Side, quantity decimal.Decimal) *Order {
+func MarketOrder(instrument Instrument, side Side, quantity Fixed) *Order {
 	order := newOrder(instrument, side, quantity)
 	order.Price = ZERO
 	order.OrderType = Market
 	return order
 }
 
-func LimitOrder(instrument Instrument, side Side, price decimal.Decimal, quantity decimal.Decimal) *Order {
+func LimitOrder(instrument Instrument, side Side, price Fixed, quantity Fixed) *Order {
 	order := newOrder(instrument, side, quantity)
 	order.Price = price
 	order.OrderType = Limit
 	return order
 }
-func newOrder(instrument Instrument, side Side, qty decimal.Decimal) *Order {
+func newOrder(instrument Instrument, side Side, qty Fixed) *Order {
 	order := new(Order)
 	order.Instrument = instrument
 	order.Side = side

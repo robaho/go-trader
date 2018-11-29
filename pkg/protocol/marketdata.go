@@ -3,7 +3,6 @@ package protocol
 import (
 	"bytes"
 	. "github.com/robaho/go-trader/pkg/common"
-	"io"
 )
 
 // very simplified structure, only one book and associated trades per UDP packet, and it contains the complete book
@@ -23,7 +22,7 @@ func EncodeMarketEvent(book *Book, trades []Trade) []byte {
 	return buf.Bytes()
 }
 
-func DecodeMarketEvent(r io.ByteReader) (*Book, []Trade) {
+func DecodeMarketEvent(r ByteReader) (*Book, []Trade) {
 	instrumentId, _ := ReadVarint(r)
 	instrument := IMap.GetByID(instrumentId)
 
@@ -51,7 +50,7 @@ func encodeBook(book *Book) []byte {
 	return buf.Bytes()
 }
 
-func decodeBook(r io.ByteReader, instrument Instrument) *Book {
+func decodeBook(r ByteReader, instrument Instrument) *Book {
 	book := new(Book)
 
 	sequence, _ := ReadUvarint(r)
@@ -65,7 +64,7 @@ func decodeBook(r io.ByteReader, instrument Instrument) *Book {
 	return book
 }
 
-func encodeLevels(w io.ByteWriter, levels []BookLevel) {
+func encodeLevels(w ByteWriter, levels []BookLevel) {
 	w.WriteByte(byte(len(levels)))
 	for _, level := range levels {
 		EncodeDecimal(w, level.Price)
@@ -73,7 +72,7 @@ func encodeLevels(w io.ByteWriter, levels []BookLevel) {
 	}
 }
 
-func decodeLevels(r io.ByteReader) []BookLevel {
+func decodeLevels(r ByteReader) []BookLevel {
 	n, _ := r.ReadByte()
 	levels := make([]BookLevel, n)
 	for i := 0; i < int(n); i++ {
@@ -99,7 +98,7 @@ func encodeTrades(trades []Trade) []byte {
 	return buf.Bytes()
 }
 
-func decodeTrades(r io.ByteReader, instrument Instrument) []Trade {
+func decodeTrades(r ByteReader, instrument Instrument) []Trade {
 	n, _ := r.ReadByte() // read length
 	trades := make([]Trade, n)
 	for i := 0; i < int(n); i++ {

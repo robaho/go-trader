@@ -155,9 +155,9 @@ func (app *myApplication) onExecutionReport(msg executionreport.ExecutionReport,
 		defer order.Unlock()
 
 		order.ExchangeId = exchangeId
-		order.Remaining = remaining
-		order.Price = price
-		order.Quantity = qty
+		order.Remaining = ToFixed(remaining)
+		order.Price = ToFixed(price)
+		order.Quantity = ToFixed(qty)
 
 		order.OrderState = MapFromFixOrdStatus(ordStatus)
 	}

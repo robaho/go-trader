@@ -2,13 +2,13 @@ package exchange
 
 import (
 	"fmt"
+	. "github.com/robaho/fixed"
 	"log"
 	"strconv"
 
 	"github.com/pkg/errors"
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/robaho/go-trader/pkg/protocol"
-	"github.com/shopspring/decimal"
 )
 
 type grpcServer struct {
@@ -54,7 +54,7 @@ func (c *grpcClient) String() string {
 	return c.SessionID()
 }
 
-func (c *grpcClient) sendTradeExecutionReport(so sessionOrder, price decimal.Decimal, quantity decimal.Decimal, remaining decimal.Decimal) {
+func (c *grpcClient) sendTradeExecutionReport(so sessionOrder, price Fixed, quantity Fixed, remaining Fixed) {
 	rpt := &protocol.ExecutionReport{}
 	rpt.Symbol = so.order.Symbol()
 	rpt.ExOrdId = so.order.ExchangeId
@@ -154,7 +154,7 @@ func (s *grpcServer) massquote(server protocol.Exchange_ConnectionServer, client
 	if instrument == nil {
 		return errors.New("unknown symbol " + q.Symbol)
 	}
-	return s.e.Quote(client, instrument, decimal.NewFromFloat(q.BidPrice), decimal.NewFromFloat(q.BidQuantity), decimal.NewFromFloat(q.AskPrice), decimal.NewFromFloat(q.AskQuantity))
+	return s.e.Quote(client, instrument, NewDecimalF(q.BidPrice), NewDecimalF(q.BidQuantity), NewDecimalF(q.AskPrice), NewDecimalF(q.AskQuantity))
 }
 func (s *grpcServer) create(conn protocol.Exchange_ConnectionServer, client *grpcClient, request *protocol.CreateOrderRequest) error {
 
@@ -174,17 +174,17 @@ func (s *grpcServer) create(conn protocol.Exchange_ConnectionServer, client *grp
 	}
 
 	if request.OrderType == protocol.CreateOrderRequest_Limit {
-		order = LimitOrder(instrument, side, decimal.NewFromFloat(request.Price), decimal.NewFromFloat(request.Quantity))
+		order = LimitOrder(instrument, side, NewDecimalF(request.Price), NewDecimalF(request.Quantity))
 	} else {
-		order = MarketOrder(instrument, side, decimal.NewFromFloat(request.Quantity))
+		order = MarketOrder(instrument, side, NewDecimalF(request.Quantity))
 	}
 	order.Id = NewOrderID(strconv.Itoa(int(request.ClOrdId)))
 	s.e.CreateOrder(client, order)
 	return nil
 }
 func (s *grpcServer) modify(server protocol.Exchange_ConnectionServer, client *grpcClient, request *protocol.ModifyOrderRequest) error {
-	price := decimal.NewFromFloat(request.Price)
-	qty := decimal.NewFromFloat(request.Quantity)
+	price := NewDecimalF(request.Price)
+	qty := NewDecimalF(request.Quantity)
 	s.e.ModifyOrder(client, NewOrderID(strconv.Itoa(int(request.ClOrdId))), price, qty)
 	return nil
 }

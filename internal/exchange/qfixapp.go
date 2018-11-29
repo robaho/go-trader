@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/quickfixgo/fix44/securitydefinition"
 	"github.com/quickfixgo/fix44/securitylistrequest"
+	. "github.com/robaho/fixed"
 	"strconv"
 	"sync"
 
@@ -109,9 +110,9 @@ func (app *myApplication) onNewOrderSingle(msg newordersingle.NewOrderSingle, se
 	}
 	var order *Order
 	if ordType == enum.OrdType_LIMIT {
-		order = LimitOrder(instrument, MapFromFixSide(side), price, qty)
+		order = LimitOrder(instrument, MapFromFixSide(side), ToFixed(price), ToFixed(qty))
 	} else {
-		order = MarketOrder(instrument, MapFromFixSide(side), qty)
+		order = MarketOrder(instrument, MapFromFixSide(side), ToFixed(qty))
 	}
 	order.Id = NewOrderID(clOrdId)
 
@@ -119,8 +120,8 @@ func (app *myApplication) onNewOrderSingle(msg newordersingle.NewOrderSingle, se
 	app.e.CreateOrder(c, order)
 
 	return nil
-
 }
+
 func (app *myApplication) onOrderCancelRequest(msg ordercancelrequest.OrderCancelRequest, sessionID quickfix.SessionID) quickfix.MessageRejectError {
 	clOrdId, err := msg.GetClOrdID()
 	if err != nil {
@@ -146,7 +147,7 @@ func (app *myApplication) onOrderCancelReplaceRequest(msg ordercancelreplacerequ
 		return err
 	}
 	c := fixClient{sessionID: sessionID}
-	app.e.ModifyOrder(c, NewOrderID(clOrdId), price, qty)
+	app.e.ModifyOrder(c, NewOrderID(clOrdId), ToFixed(price), ToFixed(qty))
 
 	return nil
 }
@@ -192,7 +193,7 @@ func (app *myApplication) onMassQuote(msg massquote.MassQuote, sessionID quickfi
 	}
 
 	c := fixClient{sessionID: sessionID}
-	app.e.Quote(c, instrument, bidPrice, bidQty, offerPrice, offerQty)
+	app.e.Quote(c, instrument, ToFixed(bidPrice), ToFixed(bidQty), ToFixed(offerPrice), ToFixed(offerQty))
 
 	return nil
 }
@@ -250,13 +251,13 @@ func (app *myApplication) sendInstrument(instrument Instrument, reqid string, se
 	quickfix.SendToTarget(msg, sessionID)
 }
 
-func (app *myApplication) sendTradeExecutionReport(so sessionOrder, price decimal.Decimal, qty decimal.Decimal, remaining decimal.Decimal) {
+func (app *myApplication) sendTradeExecutionReport(so sessionOrder, price Fixed, qty Fixed, remaining Fixed) {
 
 	order := so.order
 
 	var ordStatus enum.OrdStatus
 
-	if remaining.Equals(ZERO) {
+	if remaining.Equal(ZERO) {
 		ordStatus = MapToFixOrdStatus(order.OrderState)
 	} else {
 		ordStatus = enum.OrdStatus_PARTIALLY_FILLED
@@ -269,15 +270,15 @@ func (app *myApplication) sendTradeExecutionReport(so sessionOrder, price decima
 		field.NewExecType(enum.ExecType_FILL),
 		field.NewOrdStatus(ordStatus),
 		field.NewSide(side),
-		field.NewLeavesQty(remaining, 4),
-		field.NewCumQty(order.Quantity.Sub(remaining), 4),
-		field.NewAvgPx(ZERO, 4))
+		field.NewLeavesQty(ToDecimal(remaining), 4),
+		field.NewCumQty(ToDecimal(order.Quantity.Sub(remaining)), 4),
+		field.NewAvgPx(decimal.Zero, 4))
 	msg.SetClOrdID(order.Id.String())
-	msg.SetPrice(order.Price, 4)
-	msg.SetOrderQty(order.Quantity, 4)
+	msg.SetPrice(ToDecimal(order.Price), 4)
+	msg.SetOrderQty(ToDecimal(order.Quantity), 4)
 	msg.SetSymbol(order.Instrument.Symbol())
-	msg.SetLastPx(price, 4)
-	msg.SetLastQty(qty, 4)
+	msg.SetLastPx(ToDecimal(price), 4)
+	msg.SetLastQty(ToDecimal(qty), 4)
 
 	quickfix.SendToTarget(msg, so.client.(fixClient).sessionID)
 }
@@ -293,12 +294,12 @@ func (app *myApplication) sendExecutionReport(execType enum.ExecType, so session
 		field.NewExecType(execType),
 		field.NewOrdStatus(MapToFixOrdStatus(order.OrderState)),
 		field.NewSide(side),
-		field.NewLeavesQty(order.Remaining, 4),
-		field.NewCumQty(order.Quantity.Sub(order.Remaining), 4),
-		field.NewAvgPx(ZERO, 4))
+		field.NewLeavesQty(ToDecimal(order.Remaining), 4),
+		field.NewCumQty(ToDecimal(order.Quantity.Sub(order.Remaining)), 4),
+		field.NewAvgPx(ToDecimal(ZERO), 4))
 	msg.SetClOrdID(order.Id.String())
-	msg.SetPrice(order.Price, 4)
-	msg.SetOrderQty(order.Quantity, 4)
+	msg.SetPrice(ToDecimal(order.Price), 4)
+	msg.SetOrderQty(ToDecimal(order.Quantity), 4)
 	msg.SetSymbol(order.Instrument.Symbol())
 
 	quickfix.SendToTarget(msg, so.client.(fixClient).sessionID)

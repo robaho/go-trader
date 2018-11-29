@@ -1,13 +1,13 @@
 package common
 
 import (
-	"github.com/shopspring/decimal"
+	. "github.com/robaho/fixed"
 	"reflect"
 )
 
 type BookLevel struct {
-	Price    decimal.Decimal
-	Quantity decimal.Decimal
+	Price    Fixed
+	Quantity Fixed
 }
 
 type Book struct {

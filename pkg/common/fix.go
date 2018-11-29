@@ -1,6 +1,18 @@
 package common
 
-import "github.com/quickfixgo/enum"
+import (
+	"github.com/quickfixgo/enum"
+	. "github.com/robaho/fixed"
+	"github.com/shopspring/decimal"
+)
+
+func ToFixed(d decimal.Decimal) Fixed {
+	f, _ := d.Float64()
+	return NewDecimalF(f)
+}
+func ToDecimal(f Fixed) decimal.Decimal {
+	return decimal.NewFromFloat(f.Float())
+}
 
 func MapToFixSide(side Side) enum.Side {
 	switch side {
