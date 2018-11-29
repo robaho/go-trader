@@ -93,12 +93,12 @@ func PutVarint(w ByteWriter, x int64) int {
 }
 
 func EncodeDecimal(w ByteWriter, d Fixed) {
-	PutVarint(w, d.ToRaw())
+	d.WriteTo(w)
 }
 
 func DecodeDecimal(r ByteReader) Fixed {
-	i, _ := ReadVarint(r)
-	return FromRaw(i)
+	f, _ := ReadFrom(r)
+	return f
 }
 
 func EncodeString(w ByteWriter, s string) {
