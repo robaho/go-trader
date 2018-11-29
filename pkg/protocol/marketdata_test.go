@@ -9,7 +9,7 @@ import (
 
 func TestEncodeDecodeBook(t *testing.T) {
 
-	instrument := NewEquity(12345, "IBM")
+	instrument := NewInstrument(12345, "IBM")
 	IMap.Put(instrument)
 
 	book := Book{Instrument: instrument, Sequence: 123456789}
