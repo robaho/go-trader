@@ -288,10 +288,6 @@ func rememberPacket(packetNumber uint64, data []byte) {
 	history.Lock()
 	defer history.Unlock()
 
-	p := new(Packet)
-	p.number = packetNumber
-	p.data = make([]byte, len(data))
-
 	if history.packets.Len() > 10000 {
 		history.packets.Remove(history.packets.Front())
 	}
