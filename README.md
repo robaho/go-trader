@@ -1,6 +1,12 @@
 # go-trader
 
-A financial exchange written in Go. Uses quickfixgo or gRPC for client/server communication. Uses UDP multicast for market distribution.
+A financial exchange written in Go. 
+
+Uses quickfixgo or gRPC for client/server communication. 
+
+Uses UDP multicast for market distribution.
+
+It uses the high-performance fixed point library [fixed](https://github.com/robaho/fixed).
 
 There is a sample client with a command line GUI, a sample "market maker", and a sample "playback".
 
@@ -52,12 +58,6 @@ Using the quickfixgo connector:
 **4 market makers can perform 16k round-trip quotes/sec** 
 
 Using the gRPC connector:
-
-**1 market maker can perform 10k round-trip quotes/sec**
-
-**4 market makers can perform 25k round-trip quotes/sec** 
-
-Using branch 'fixed', which use the high-performance fixed point library [fixed](https://github.com/robaho/fixed), and gRPC:
 
 **1 market maker can perform 12k round-trip quotes/sec**
 
