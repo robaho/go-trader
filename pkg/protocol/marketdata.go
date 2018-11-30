@@ -8,24 +8,21 @@ import (
 // very simplified structure, only one book and associated trades per UDP packet, and it contains the complete book
 // currently it all needs to fit in a single packet or it won't work, although straightforward to send additional trade packets
 
-var placeholder [8]byte
+// MaxMsgSize is the maximum length of a multicast message
+const MaxMsgSize = 1024
 
-func EncodeMarketEvent(book *Book, trades []Trade) []byte {
-
-	buf := new(bytes.Buffer)
-	buf.Write(placeholder[:]) // leave room for packet number
-	PutVarint(buf, book.Instrument.ID())
+func EncodeMarketEvent(w *bytes.Buffer, book *Book, trades []Trade) {
+	PutVarint(w, book.Instrument.ID())
 	if book != nil {
-		buf.WriteByte(1) // has book
-		buf.Write(encodeBook(book))
+		w.WriteByte(1) // has book
+		encodeBook(w, book)
 	} else {
-		buf.WriteByte(0) // no book
+		w.WriteByte(0) // no book
 	}
-	buf.Write(encodeTrades(trades))
-	return buf.Bytes()
+	encodeTrades(w, trades)
 }
 
-func DecodeMarketEvent(r ByteReader) (*Book, []Trade) {
+func DecodeMarketEvent(r *bytes.Buffer) (*Book, []Trade) {
 	instrumentId, _ := ReadVarint(r)
 	instrument := IMap.GetByID(instrumentId)
 
@@ -42,18 +39,14 @@ func DecodeMarketEvent(r ByteReader) (*Book, []Trade) {
 	return book, trades
 }
 
-func encodeBook(book *Book) []byte {
-	buf := new(bytes.Buffer)
-
+func encodeBook(buf *bytes.Buffer, book *Book) {
 	PutUvarint(buf, book.Sequence)
 
 	encodeLevels(buf, book.Bids)
 	encodeLevels(buf, book.Asks)
-
-	return buf.Bytes()
 }
 
-func decodeBook(r ByteReader, instrument Instrument) *Book {
+func decodeBook(r *bytes.Buffer, instrument Instrument) *Book {
 	book := new(Book)
 
 	sequence, _ := ReadUvarint(r)
@@ -67,7 +60,7 @@ func decodeBook(r ByteReader, instrument Instrument) *Book {
 	return book
 }
 
-func encodeLevels(w ByteWriter, levels []BookLevel) {
+func encodeLevels(w *bytes.Buffer, levels []BookLevel) {
 	w.WriteByte(byte(len(levels)))
 	for _, level := range levels {
 		EncodeDecimal(w, level.Price)
@@ -87,9 +80,7 @@ func decodeLevels(r ByteReader) []BookLevel {
 }
 
 // this will blow up if any given match generates a ton of trades...
-func encodeTrades(trades []Trade) []byte {
-	buf := new(bytes.Buffer)
-
+func encodeTrades(buf *bytes.Buffer, trades []Trade) {
 	buf.WriteByte(byte(len(trades)))
 	for _, v := range trades {
 		EncodeDecimal(buf, v.Quantity)
@@ -97,11 +88,9 @@ func encodeTrades(trades []Trade) []byte {
 		EncodeString(buf, v.ExchangeID)
 		EncodeTime(buf, v.TradeTime)
 	}
-
-	return buf.Bytes()
 }
 
-func decodeTrades(r ByteReader, instrument Instrument) []Trade {
+func decodeTrades(r *bytes.Buffer, instrument Instrument) []Trade {
 	n, _ := r.ReadByte() // read length
 	trades := make([]Trade, n)
 	for i := 0; i < int(n); i++ {
@@ -113,7 +102,6 @@ func decodeTrades(r ByteReader, instrument Instrument) []Trade {
 		trades[i] = Trade{Instrument: instrument, Price: price, Quantity: qty, ExchangeID: exchangeID, TradeTime: tradeTime}
 	}
 	return trades
-
 }
 
 type ReplayRequest struct {

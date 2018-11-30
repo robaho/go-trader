@@ -17,7 +17,7 @@ func TestEncodeDecodeBook(t *testing.T) {
 	book.Asks = []BookLevel{BookLevel{NewDecimal("100.4567"), NewDecimal("120")}}
 
 	buf := new(bytes.Buffer)
-	buf.Write(encodeBook(&book))
+	encodeBook(buf, &book)
 
 	book2 := decodeBook(buf, instrument)
 

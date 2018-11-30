@@ -67,12 +67,12 @@ func StartMarketDataReceiver(c ExchangeConnector, callback ConnectorCallback, pr
 		log.Println("listening for market data on", l.LocalAddr())
 		l.SetReadBuffer(16 * 1024 * 1024)
 		for {
-			b := make([]byte, 1024)
-			_, _, err := l.ReadFromUDP(b)
+			b := make([]byte, protocol.MaxMsgSize)
+			n, _, err := l.ReadFromUDP(b)
 			if err != nil {
 				log.Fatal("ReadFromUDP failed:", err)
 			}
-			packetNumber = md.packetReceived(packetNumber, b)
+			packetNumber = md.packetReceived(packetNumber, b[:n])
 		}
 	}()
 
@@ -157,15 +157,20 @@ func (c *marketDataReceiver) processPacket(packet []byte) {
 
 	packet = packet[8:] // skip over packet number
 
-	book, trades := protocol.DecodeMarketEvent(bytes.NewBuffer(packet))
-	if book != nil {
-		last, ok := lastSequence[book.Instrument]
-		if (ok && book.Sequence > last) || !ok {
-			c.callback.OnBook(book)
-			lastSequence[book.Instrument] = book.Sequence
+	buf := bytes.NewBuffer(packet)
+
+	for buf.Len() > 0 {
+		book, trades := protocol.DecodeMarketEvent(buf)
+		if book != nil {
+			last, ok := lastSequence[book.Instrument]
+			if (ok && book.Sequence > last) || !ok {
+				c.callback.OnBook(book)
+				lastSequence[book.Instrument] = book.Sequence
+			}
+		}
+		for _, trade := range trades {
+			c.callback.OnTrade(&trade)
 		}
 	}
-	for _, trade := range trades {
-		c.callback.OnTrade(&trade)
-	}
+
 }

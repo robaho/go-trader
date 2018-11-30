@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"bytes"
 	"container/list"
 	"encoding/binary"
 	"fmt"
@@ -92,8 +93,19 @@ func GetBook(symbol string) *Book {
 	return GetLatestBook(i)
 }
 
+func newBuffer() *bytes.Buffer {
+
+	placeholder := make([]byte, 8)
+	buf := new(bytes.Buffer)
+	buf.Grow(protocol.MaxMsgSize)
+	buf.Write(placeholder) // leave room for packet number
+	return buf
+}
+
 func publish() {
 	stats := make(map[Instrument]*Statistics)
+
+	buf := newBuffer()
 
 	for {
 		event := <-eventChannel
@@ -135,7 +147,29 @@ func publish() {
 
 		statsCache.Store(book.Instrument, s)
 
-		sendPacket(protocol.EncodeMarketEvent(book, trades))
+		buf2 := newBuffer()
+
+		protocol.EncodeMarketEvent(buf2, book, trades)
+
+		if len(eventChannel) == 0 || buf2.Len()+buf.Len() > protocol.MaxMsgSize {
+			if buf.Len() == 8 { // the group packet is empty, so just use this one
+				sendPacket(buf2.Bytes())
+			} else {
+				if buf2.Len()+buf.Len() > protocol.MaxMsgSize {
+					sendPacket(buf.Bytes())
+					sendPacket(buf2.Bytes())
+				} else {
+					// copy current into the group packet, skipping packet number
+					buf.Write(buf2.Bytes()[8:])
+					sendPacket(buf.Bytes())
+				}
+				buf = newBuffer()
+			}
+		} else {
+			// there is another update so delay sending, and this fits, so copy to group packet
+			buf.Write(buf2.Bytes()[8:])
+		}
+
 		// publish to internal subscribers
 		for _, sub := range subscriptions {
 			sub <- book
