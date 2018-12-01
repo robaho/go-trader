@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
+	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,8 +49,19 @@ func main() {
 	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 	delay := flag.Int("delay", 0, "set the delay in ms after each quote, 0 to disable")
 	proto := flag.String("proto", "", "override protocol, grpc or fix")
+	duration := flag.Int("duration", 0, "run for N seconds, 0 = forever")
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
 
 	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	callback.symbol = *symbol
 
@@ -81,6 +94,7 @@ func main() {
 	var updates uint64
 
 	start := time.Now()
+	end := start.Add(time.Duration(int64(*duration)) * time.Second)
 
 	fmt.Println("sending quotes on", instrument.Symbol(), "...")
 
@@ -96,7 +110,7 @@ func main() {
 
 	h := gohistogram.NewHistogram(50)
 
-	for {
+	for *duration == 0 || time.Now().Before(end) {
 		var delta = 1
 		var r = r.Intn(10)
 		if r <= 2 {
