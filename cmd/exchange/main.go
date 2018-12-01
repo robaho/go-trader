@@ -24,8 +24,6 @@ import _ "net/http/pprof"
 
 func main() {
 
-	runtime.GOMAXPROCS(8)
-
 	fix := flag.String("fix", "configs/qf_got_settings", "set the fix session file")
 	props := flag.String("props", "configs/got_settings", "set the exchange properties file")
 	instruments := flag.String("instruments", "configs/instruments.txt", "the instrument file")
