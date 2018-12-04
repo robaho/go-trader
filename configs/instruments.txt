@@ -12,3 +12,4 @@
 2 AAPL
 3 AMZN
 4 GOOG
+5 FB
