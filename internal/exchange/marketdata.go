@@ -29,6 +29,7 @@ var udpCon *net.UDPConn
 var pUdpCon *ipv4.PacketConn
 var subMutex sync.Mutex
 var subscriptions []chan *Book
+var buffers = &SPSC{}
 
 type MarketEvent struct {
 	book   *Book
@@ -94,8 +95,15 @@ func GetBook(symbol string) *Book {
 }
 
 func newBuffer() *bytes.Buffer {
-
 	placeholder := make([]byte, 8)
+
+	p := buffers.get()
+
+	if p != nil {
+		p.Write(placeholder) // leave room for packet number
+		return p
+	}
+
 	buf := new(bytes.Buffer)
 	buf.Grow(protocol.MaxMsgSize)
 	buf.Write(placeholder) // leave room for packet number
@@ -323,7 +331,8 @@ func rememberPacket(packetNumber uint64, data []byte) {
 	defer history.Unlock()
 
 	if history.packets.Len() > 10000 {
-		history.packets.Remove(history.packets.Front())
+		p := history.packets.Remove(history.packets.Front()).(*Packet)
+		buffers.put(bytes.NewBuffer(p.data[:0]))
 	}
 
 	packet := Packet{packetNumber, data}
