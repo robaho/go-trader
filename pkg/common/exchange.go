@@ -3,7 +3,6 @@ package common
 import (
 	"errors"
 	. "github.com/robaho/fixed"
-	"github.com/shopspring/decimal"
 	"time"
 )
 
@@ -35,8 +34,8 @@ type Fill struct {
 	// Order will be nil on quote trade, the order is unlocked
 	Order      *Order
 	ExchangeID string
-	Quantity   decimal.Decimal
-	Price      decimal.Decimal
+	Quantity   Fixed
+	Price      Fixed
 	Side       Side
 	IsLegTrade bool
 }

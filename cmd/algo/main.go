@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/robaho/fixed"
 	"log"
 	"time"
 
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/robaho/go-trader/pkg/connector"
-	"github.com/shopspring/decimal"
 )
 
 type algoState int
@@ -27,9 +27,9 @@ var exchange ExchangeConnector
 type MyAlgo struct {
 	symbol      string
 	instrument  Instrument
-	entryPrice  decimal.Decimal
-	offset      decimal.Decimal
-	totalProfit decimal.Decimal
+	entryPrice  fixed.Fixed
+	offset      fixed.Fixed
+	totalProfit fixed.Fixed
 	state       algoState
 	runs        int
 	nextEntry   time.Time
@@ -86,7 +86,7 @@ func (a *MyAlgo) OnFill(fill *Fill) {
 	if a.state == waitSell {
 		profit := fill.Price.Sub(a.entryPrice)
 		fmt.Println("exited market at ", fill.Price)
-		if profit.GreaterThan(decimal.Zero) {
+		if profit.GreaterThan(fixed.ZERO) {
 			fmt.Println("!!!! winner ", profit)
 		} else {
 			fmt.Println("____ loser ", profit)
@@ -118,7 +118,7 @@ func main() {
 	flag.Parse()
 
 	callback.symbol = *symbol
-	callback.offset = decimal.NewFromFloat(*offset)
+	callback.offset = fixed.NewF(*offset)
 
 	p, err := NewProperties(*props)
 	if err != nil {
@@ -133,7 +133,7 @@ func main() {
 		panic("exchange is not connected")
 	}
 
-	err := exchange.DownloadInstruments()
+	err = exchange.DownloadInstruments()
 	if err != nil {
 		panic(err)
 	}
@@ -148,7 +148,7 @@ func main() {
 	for {
 		time.Sleep(time.Duration(10) * time.Second)
 		tp := callback.totalProfit
-		if tp.LessThan(decimal.Zero) {
+		if tp.LessThan(fixed.ZERO) {
 			fmt.Println("<<<<< total profit", tp)
 		} else {
 			fmt.Println(">>>>> total profit", tp)

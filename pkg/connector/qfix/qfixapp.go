@@ -3,6 +3,7 @@ package qfix
 import (
 	"fmt"
 	"github.com/quickfixgo/fix44/securitydefinition"
+	"github.com/robaho/fixed"
 	"strings"
 
 	"github.com/quickfixgo/enum"
@@ -168,10 +169,14 @@ func (app *myApplication) onExecutionReport(msg executionreport.ExecutionReport,
 			return err
 		}
 		lastQty, err := msg.GetLastQty()
+
+		lastPxF, _ := lastPx.Float64()
+		lastQtyF, _ := lastQty.Float64()
+
 		if err != nil {
 			return err
 		}
-		fill := &Fill{instrument, id == 0, order, exchangeId, lastQty, lastPx, MapFromFixSide(side), false}
+		fill := &Fill{instrument, id == 0, order, exchangeId, fixed.NewF(lastQtyF), fixed.NewF(lastPxF), MapFromFixSide(side), false}
 		app.c.callback.OnFill(fill)
 	}
 

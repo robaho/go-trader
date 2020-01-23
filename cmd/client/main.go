@@ -133,9 +133,9 @@ func (MyCallback) OnFill(fill *Fill) {
 		color = gocui.ColorRed
 	}
 	if fill.IsQuote {
-		vlogcf("fills", color, "quote fill on %s, %s %s @ %s\n", fill.Instrument.Symbol(), fill.Side, fill.Quantity.String(), fill.Price.StringFixed(2))
+		vlogcf("fills", color, "quote fill on %s, %s %s @ %s\n", fill.Instrument.Symbol(), fill.Side, fill.Quantity.String(), fill.Price.StringN(2))
 	} else {
-		vlogcf("fills", color, "order %d fill on %s, %s %s @ %s\n", fill.Order.Id, fill.Instrument.Symbol(), fill.Side, fill.Quantity.String(), fill.Price.StringFixed(2))
+		vlogcf("fills", color, "order %d fill on %s, %s %s @ %s\n", fill.Order.Id, fill.Instrument.Symbol(), fill.Side, fill.Quantity.String(), fill.Price.StringN(2))
 	}
 }
 

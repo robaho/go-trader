@@ -5,7 +5,6 @@ import (
 	. "github.com/robaho/fixed"
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/robaho/go-trader/pkg/protocol"
-	"github.com/shopspring/decimal"
 	"google.golang.org/grpc"
 	"io"
 	"log"
@@ -326,8 +325,8 @@ func (c *grpcConnector) handleExecutionReport(rpt *protocol.ExecutionReport) {
 	}
 
 	if rpt.ReportType == protocol.ExecutionReport_Fill {
-		lastPx := decimal.NewFromFloat(rpt.LastPrice)
-		lastQty := decimal.NewFromFloat(rpt.LastQuantity)
+		lastPx := NewF(rpt.LastPrice)
+		lastQty := NewF(rpt.LastQuantity)
 
 		var side Side
 		if rpt.Side == protocol.CreateOrderRequest_Buy {

@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"os"
 	"runtime/pprof"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -17,13 +16,13 @@ import (
 )
 
 type MyCallback struct {
-	wg     sync.WaitGroup
+	ch     chan bool
 	symbol string
 }
 
 func (cb *MyCallback) OnBook(book *Book) {
 	if book.Instrument.Symbol() == cb.symbol {
-		cb.wg.Done()
+		cb.ch <- true
 	}
 }
 
@@ -42,7 +41,7 @@ func (*MyCallback) OnTrade(trade *Trade) {
 }
 
 func main() {
-	var callback = MyCallback{}
+	var callback = MyCallback{make(chan bool, 128), ""}
 
 	symbol := flag.String("symbol", "IBM", "set the symbol")
 	fix := flag.String("fix", "configs/qf_mm1_settings", "set the fix session file")
@@ -139,12 +138,15 @@ func main() {
 			if bidPrice.Equal(askPrice) {
 				panic("bid price equals ask price")
 			}
-			callback.wg.Add(1)
 			err := exchange.Quote(instrument, bidPrice, bidQty, askPrice, askQty)
 			if err != nil {
 				log.Fatal("unable to submit quote", err)
 			}
-			callback.wg.Wait()
+			<-callback.ch
+			// drain channel
+			for len(callback.ch) > 0 {
+				<-callback.ch
+			}
 		}
 		h.Add(float64(time.Now().Sub(now).Nanoseconds()))
 		if *delay != 0 {
