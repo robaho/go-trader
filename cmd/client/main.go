@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/shopspring/decimal"
+	"github.com/robaho/fixed"
 	"log"
 	"strings"
 	"sync"
@@ -29,11 +29,11 @@ func (MyCallback) OnBook(book *Book) {
 
 	bidPrice, bidQty, askPrice, askQty := "", "", "", ""
 	if book.HasBids() {
-		bidPrice = book.Bids[0].Price.StringFixed(2)
+		bidPrice = book.Bids[0].Price.StringN(2)
 		bidQty = book.Bids[0].Quantity.String()
 	}
 	if book.HasAsks() {
-		askPrice = book.Asks[0].Price.StringFixed(2)
+		askPrice = book.Asks[0].Price.StringN(2)
 		askQty = book.Asks[0].Quantity.String()
 	}
 
@@ -45,11 +45,11 @@ func (MyCallback) OnBook(book *Book) {
 			v.Clear()
 			v.FgColor = gocui.ColorRed
 			for i := len(book.Asks) - 1; i >= 0; i-- {
-				fmt.Fprintf(v, "%5s @ %10s\n", book.Asks[i].Quantity.String(), book.Asks[i].Price.StringFixed(2))
+				fmt.Fprintf(v, "%5s @ %10s\n", book.Asks[i].Quantity.String(), book.Asks[i].Price.StringN(2))
 			}
 			v.FgColor = gocui.ColorGreen
 			for i := 0; i < len(book.Bids); i++ {
-				fmt.Fprintf(v, "%5s @ %10s\n", book.Bids[i].Quantity.String(), book.Bids[i].Price.StringFixed(2))
+				fmt.Fprintf(v, "%5s @ %10s\n", book.Bids[i].Quantity.String(), book.Bids[i].Price.StringN(2))
 			}
 			v.FgColor = gocui.ColorDefault
 			return nil
@@ -116,10 +116,10 @@ func (MyCallback) OnOrderStatus(order *Order) {
 			v.FgColor = color
 
 			qty := order.Remaining.String()
-			if !order.Remaining.Equals(order.Quantity) {
+			if !order.Remaining.Equal(order.Quantity) {
 				qty = qty + " (" + order.Quantity.String() + ")"
 			}
-			fmt.Fprintf(v, "%5d %10s %5s %10s @ %10s\n", order.Id, order.Instrument.Symbol(), order.Side, qty, order.Price.StringFixed(2))
+			fmt.Fprintf(v, "%5d %10s %5s %10s @ %10s\n", order.Id, order.Instrument.Symbol(), order.Side, qty, order.Price.StringN(2))
 			v.FgColor = gocui.ColorDefault
 		}
 		return err
@@ -139,14 +139,14 @@ func (MyCallback) OnFill(fill *Fill) {
 	}
 }
 
-var lastPrice = map[Instrument]decimal.Decimal{}
+var lastPrice = map[Instrument]fixed.Fixed{}
 
 func (MyCallback) OnTrade(trade *Trade) {
 	color := gocui.ColorWhite
 
 	lp, ok := lastPrice[trade.Instrument]
 	if ok {
-		if trade.Price.Equals(lp) {
+		if trade.Price.Equal(lp) {
 			color = gocui.ColorWhite
 		} else if trade.Price.GreaterThan(lp) {
 			color = gocui.ColorGreen
@@ -156,7 +156,7 @@ func (MyCallback) OnTrade(trade *Trade) {
 	}
 	lastPrice[trade.Instrument] = trade.Price
 
-	vlogcf("markets", color, "trade on %s, %s @ %s\n", trade.Instrument.Symbol(), trade.Quantity.String(), trade.Price.StringFixed(2))
+	vlogcf("markets", color, "trade on %s, %s @ %s\n", trade.Instrument.Symbol(), trade.Quantity.String(), trade.Price.StringN(2))
 }
 
 type viewLogger struct{}
