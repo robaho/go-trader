@@ -194,7 +194,7 @@ func bookToJSON(symbol string, book *Book) []byte {
 	return msg
 }
 
-func statsToJSON(symbol string, stats *Statistics) []byte {
+func statsToJSON(stats *Statistics) []byte {
 	msg, _, _ := websocket.JSON.Marshal(*stats)
 	return msg
 }
@@ -272,7 +272,7 @@ func apiStatsHandler(w http.ResponseWriter, r *http.Request) {
 		if stats == nil {
 			stats = &Statistics{}
 		}
-		s := statsToJSON(symbol, stats)
+		s := statsToJSON(stats)
 		w.Write(s)
 	}
 }
