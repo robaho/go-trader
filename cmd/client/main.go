@@ -94,11 +94,12 @@ func (MyCallback) OnOrderStatus(order *Order) {
 		activeOrderLock.Lock()
 		defer activeOrderLock.Unlock()
 		activeOrders[order.Id] = order
+		vlogf("log", "order %d is %s (active)\n", order.Id, order.OrderState)
 	} else {
 		activeOrderLock.Lock()
 		defer activeOrderLock.Unlock()
 		delete(activeOrders, order.Id)
-		vlogf("log", "order %d is %s\n", order.Id, order.OrderState)
+		vlogf("log", "order %d is %s (inactive)\n", order.Id, order.OrderState)
 	}
 	gui.Update(func(g *gocui.Gui) error {
 		v, err := g.View("orders")

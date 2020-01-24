@@ -26,6 +26,19 @@ func (c *grpcClient) SendOrderStatus(so sessionOrder) {
 	rpt.Symbol = so.order.Symbol()
 	rpt.ExOrdId = so.order.ExchangeId
 	rpt.ReportType = protocol.ExecutionReport_Status
+	switch so.order.OrderState {
+	case New, Booked:
+		rpt.OrderState = protocol.ExecutionReport_Booked
+	case PartialFill:
+		rpt.OrderState = protocol.ExecutionReport_Partial
+	case Filled:
+		rpt.OrderState = protocol.ExecutionReport_Filled
+	case Cancelled:
+		rpt.OrderState = protocol.ExecutionReport_Cancelled
+	case Rejected:
+		rpt.OrderState = protocol.ExecutionReport_Rejected
+	}
+	rpt.RejectReason = so.order.RejectReason
 	rpt.ClOrdId = int32(so.order.Id)
 	rpt.Quantity = ToFloat(so.order.Quantity)
 	rpt.Price = ToFloat(so.order.Price)
@@ -69,6 +82,23 @@ func (c *grpcClient) sendTradeExecutionReport(so sessionOrder, price Fixed, quan
 	} else {
 		rpt.Side = protocol.CreateOrderRequest_Sell
 	}
+	switch so.order.OrderState {
+	case New, Booked:
+		rpt.OrderState = protocol.ExecutionReport_Booked
+	case PartialFill:
+		rpt.OrderState = protocol.ExecutionReport_Partial
+	case Filled:
+		rpt.OrderState = protocol.ExecutionReport_Filled
+	case Cancelled:
+		rpt.OrderState = protocol.ExecutionReport_Cancelled
+	case Rejected:
+		rpt.OrderState = protocol.ExecutionReport_Rejected
+	}
+
+	if !remaining.Equal(ZERO) {
+		rpt.OrderState = protocol.ExecutionReport_Partial
+	}
+
 	rpt.Remaining = ToFloat(remaining)
 	reply := &protocol.OutMessage_Execrpt{Execrpt: rpt}
 	so.client.(*grpcClient).conn.Send(&protocol.OutMessage{Reply: reply})

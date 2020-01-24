@@ -276,6 +276,7 @@ func (c *grpcConnector) GetOrder(id OrderID) *Order {
 	}
 	return _order.(*Order)
 }
+
 func (c *grpcConnector) handleExecutionReport(rpt *protocol.ExecutionReport) {
 	exchangeId := rpt.ExOrdId
 	var id OrderID
