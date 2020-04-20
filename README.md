@@ -1,6 +1,6 @@
 # go-trader
 
-A financial exchange written in Go. 
+A financial exchange written in Go including complete order book, fix protocol, and market data distribution.
 
 Uses quickfixgo or gRPC for client/server communication. 
 
