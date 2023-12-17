@@ -39,6 +39,8 @@ func StartWebServer(addr string) {
 	t = tpl
 
 	go func() {
+		http.Handle("/assets/icons/", http.FileServer(http.Dir("web_lit/dist")))
+
 		http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("web/assets"))))
 		http.HandleFunc("/book", bookHandler)
 		http.HandleFunc("/instruments", instrumentsHandler)
@@ -49,7 +51,7 @@ func StartWebServer(addr string) {
 		http.HandleFunc("/", welcomeHandler)
 
 		http.Handle("/lit/", http.StripPrefix("/lit/", http.FileServer(http.Dir("web_lit/dist"))))
-
+		
 		// add REST api
 		http.ListenAndServe(addr, nil)
 	}()
