@@ -3,9 +3,6 @@ package exchange
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/gernest/hot"
-	. "github.com/robaho/go-trader/pkg/common"
-	"golang.org/x/net/websocket"
 	"math/rand"
 	"net/http"
 	"regexp"
@@ -13,6 +10,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gernest/hot"
+	. "github.com/robaho/go-trader/pkg/common"
+	"golang.org/x/net/websocket"
 )
 
 type empty struct{}
@@ -42,9 +43,12 @@ func StartWebServer(addr string) {
 		http.HandleFunc("/book", bookHandler)
 		http.HandleFunc("/instruments", instrumentsHandler)
 		http.HandleFunc("/sessions", sessionsHandler)
+		http.HandleFunc("/api/instruments/", authenticate(apiInstrumentsHandler))
 		http.HandleFunc("/api/book/", authenticate(apiBookHandler))
 		http.HandleFunc("/api/stats/", authenticate(apiStatsHandler))
 		http.HandleFunc("/", welcomeHandler)
+
+		http.Handle("/lit/", http.StripPrefix("/lit/", http.FileServer(http.Dir("web_lit/dist"))))
 
 		// add REST api
 		http.ListenAndServe(addr, nil)
@@ -258,6 +262,17 @@ func apiBookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		b := bookToJSON(symbol, book)
 		w.Write(b)
+	}
+}
+
+func apiInstrumentsHandler(w http.ResponseWriter, r *http.Request) {
+
+	json,_,err := websocket.JSON.Marshal(IMap.AllSymbols());
+
+	if err!=nil {
+		http.Error(w, "unable to retrieve symbol list", http.StatusInternalServerError)
+	} else {
+		w.Write(json)
 	}
 }
 
