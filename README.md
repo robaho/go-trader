@@ -16,7 +16,13 @@ The exchange is designed to allow for easy back-testing of trading strategies. I
 
 There is a very simple sample "algo". The program structure is applicable to many strategies that use an entry and exit price.
 This can be run in conjunction with the 'marketmaker' sample to test the "algo". Hint: it has a 50/50 chance of being successful EXCEPT the
-market maker bid/ask spread must be accounted for - which makes it far less than a 50/50 chance of being profitable...  
+market maker bid/ask spread must be accounted for - which makes it far less than a 50/50 chance of being profitable...
+
+There are two different web interfaces available:
+- the default interface at / uses Go templates and server side rendering
+- the alternative UI is written with Lit, and is available at /lit
+
+Use `npm run build` in the web_lit directory to build the Lit assets.
 
 It was primarily developed to further my knowledge of Go and test its suitability for high-performance financial applications.
 
