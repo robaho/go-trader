@@ -6,7 +6,7 @@ Uses quickfixgo or gRPC for client/server communication.
 
 Uses UDP multicast for market distribution.
 
-It uses the high-performance fixed point library [fixed](https://github.com/robaho/fixed).
+It uses the high-performance fixed point library [fixed](https://github.com/robaho/fixed) which I also developed.
 
 There is a sample client with a command line GUI, a sample "market maker", and a sample "playback".
 
