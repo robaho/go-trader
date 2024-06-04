@@ -89,6 +89,7 @@ func getNonce() string {
 }
 
 func authenticate(handler func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
+	// This is an example authenticator. The user/password is hard-coded to guest/password.
 	return func(w http.ResponseWriter, r *http.Request) {
 		s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 		if len(s) != 2 || s[0] != "Digest" {
@@ -109,6 +110,7 @@ func authenticate(handler func(w http.ResponseWriter, r *http.Request)) func(htt
 
 		delete(nonceMap, nonce)
 
+		// TODO read hashed credentials from db based on user
 		h1 := md5.Sum([]byte("guest:Restricted:password"))
 		h2 := md5.Sum([]byte(r.Method + ":" + uri))
 		h3 := md5.Sum([]byte(hex.EncodeToString(h1[:]) + ":" + nonce + ":" + hex.EncodeToString(h2[:])))
