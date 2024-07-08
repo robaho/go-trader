@@ -6,4 +6,5 @@ grpc_port=5000
 grpc_host=localhost
 # protocol sets the client connect protocol, the server always enables both
 # grpc|fix
-protocol=fix
+#protocol=fix
+protocol=grpc
