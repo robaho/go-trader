@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/robaho/fixed"
 	. "github.com/robaho/go-trader/pkg/common"
 )
 
@@ -12,9 +13,18 @@ func TestWaitForKey(t *testing.T) {
 	//time.Sleep(20*time.Second)
 }
 
+type testExchangeClient struct{}
+func (c testExchangeClient) SendOrderStatus(so sessionOrder){}
+func (c testExchangeClient) SendTrades(trades []trade){}
+func (c testExchangeClient) SessionID() string {
+	return "X"
+}
+
+
 func TestOrderBook(t *testing.T) {
 	// no need for locking here...
 	var ob = orderBook{}
+	var ex = testExchangeClient{}
 
 	var i = Equity{}
 
@@ -23,8 +33,8 @@ func TestOrderBook(t *testing.T) {
 	var o2 = LimitOrder(i, Sell, NewDecimal("110"), NewDecimal("10"))
 	o2.ExchangeId = "1"
 
-	var s1 = sessionOrder{"X", o1, time.Now()}
-	var s2 = sessionOrder{"X", o2, time.Now()}
+	var s1 = sessionOrder{ex, o1, time.Now()}
+	var s2 = sessionOrder{ex, o2, time.Now()}
 
 	ob.add(s1)
 	ob.add(s2)
@@ -42,8 +52,8 @@ func TestOrderBook(t *testing.T) {
 	var o4 = LimitOrder(i, Buy, NewDecimal("99"), NewDecimal("30"))
 	o4.ExchangeId = "4"
 
-	var s3 = sessionOrder{"X", o3, time.Now()}
-	var s4 = sessionOrder{"X", o4, time.Now()}
+	var s3 = sessionOrder{ex, o3, time.Now()}
+	var s4 = sessionOrder{ex, o4, time.Now()}
 
 	ob.add(s3)
 	ob.add(s4)
@@ -58,7 +68,7 @@ func TestOrderBook(t *testing.T) {
 	if len(b.Asks) != 1 {
 		t.Error("incorrect asks", b.Asks, ob)
 	}
-	if !b.Bids[0].Quantity.Equals(NewDecimal("20")) {
+	if !b.Bids[0].Quantity.Equal(NewS("20")) {
 		t.Error("wrong quantity", b.Bids)
 	}
 
@@ -77,7 +87,7 @@ func TestOrderBook(t *testing.T) {
 	if len(b.Asks) != 1 {
 		t.Error("incorrect asks", b.Asks, &ob)
 	}
-	if !b.Bids[0].Quantity.Equals(NewDecimal("20")) {
+	if !b.Bids[0].Quantity.Equal(NewS("20")) {
 		t.Error("wrong quantity", b.Bids)
 	}
 
@@ -96,7 +106,7 @@ func TestOrderBook(t *testing.T) {
 	if len(b.Asks) != 1 {
 		t.Error("incorrect asks", b.Asks, &ob)
 	}
-	if !b.Bids[0].Quantity.Equals(NewDecimal("10")) {
+	if !b.Bids[0].Quantity.Equal(NewS("10")) {
 		t.Error("wrong quantity", b.Bids)
 	}
 }
@@ -104,6 +114,7 @@ func TestOrderBook(t *testing.T) {
 func TestOrderMatch(t *testing.T) {
 	// no need for locking here...
 	var ob = orderBook{}
+	var ex = testExchangeClient{}
 
 	var i = Equity{}
 
@@ -112,8 +123,8 @@ func TestOrderMatch(t *testing.T) {
 	var o2 = LimitOrder(i, Sell, NewDecimal("100"), NewDecimal("10"))
 	o2.ExchangeId = "2"
 
-	var s1 = sessionOrder{"X", o1, time.Now()}
-	var s2 = sessionOrder{"X", o2, time.Now()}
+	var s1 = sessionOrder{ex, o1, time.Now()}
+	var s2 = sessionOrder{ex, o2, time.Now()}
 
 	ob.add(s1)
 
@@ -129,7 +140,7 @@ func TestOrderMatch(t *testing.T) {
 	if len(trades) != 1 {
 		t.Error("wrong trades", trades)
 	}
-	if !trades[0].quantity.Equals(NewDecimal("10")) {
+	if !trades[0].quantity.Equal(NewS("10")) {
 		t.Error("wrong trade qty", trades)
 	}
 
@@ -137,6 +148,7 @@ func TestOrderMatch(t *testing.T) {
 func TestOrderMatchSweep(t *testing.T) {
 	// no need for locking here...
 	var ob = orderBook{}
+	var ex = testExchangeClient{}
 
 	var i = Equity{}
 
@@ -149,9 +161,9 @@ func TestOrderMatchSweep(t *testing.T) {
 	var o3 = LimitOrder(i, Sell, NewDecimal("80"), NewDecimal("30"))
 	o2.ExchangeId = "2"
 
-	var s1 = sessionOrder{"X", o1, time.Now()}
-	var s2 = sessionOrder{"X", o2, time.Now()}
-	var s3 = sessionOrder{"X", o3, time.Now()}
+	var s1 = sessionOrder{ex, o1, time.Now()}
+	var s2 = sessionOrder{ex, o2, time.Now()}
+	var s3 = sessionOrder{ex, o3, time.Now()}
 
 	ob.add(s1)
 	ob.add(s2)
@@ -168,10 +180,10 @@ func TestOrderMatchSweep(t *testing.T) {
 	if len(trades) != 2 {
 		t.Error("wrong trades", trades)
 	}
-	if !trades[0].quantity.Equals(NewDecimal("20")) {
+	if !trades[0].quantity.Equal(NewS("20")) {
 		t.Error("wrong trade qty", trades)
 	}
-	if !trades[1].quantity.Equals(NewDecimal("10")) {
+	if !trades[1].quantity.Equal(NewS("10")) {
 		t.Error("wrong trade qty", trades)
 	}
 
