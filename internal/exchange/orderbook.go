@@ -1,23 +1,31 @@
 package exchange
 
 import (
-	. "github.com/robaho/fixed"
-	"sync"
-)
-import (
 	"fmt"
 	"sort"
+	"sync"
 	"sync/atomic"
 	"time"
+
+	. "github.com/robaho/fixed"
 
 	. "github.com/robaho/go-trader/pkg/common"
 )
 
+type priceLevel struct {
+	orderList
+	price Fixed
+}
+
+func (level priceLevel) String() string {
+	return fmt.Sprint("", level.price, "=", &level.orderList)
+}
+
 type orderBook struct {
 	sync.Mutex
 	Instrument
-	bids []sessionOrder
-	asks []sessionOrder
+	bids []priceLevel
+	asks []priceLevel
 }
 
 type trade struct {
@@ -33,7 +41,7 @@ type trade struct {
 }
 
 func (ob *orderBook) String() string {
-	return fmt.Sprint("bids:", ob.bids, "asks:", ob.asks)
+	return fmt.Sprint("bids:", ob.bids, ", asks:", ob.asks)
 }
 
 func (ob *orderBook) add(so sessionOrder) ([]trade, error) {
@@ -57,16 +65,23 @@ func (ob *orderBook) add(so sessionOrder) ([]trade, error) {
 	return trades, nil
 }
 
-func insertSort(orders []sessionOrder, so sessionOrder, direction int) []sessionOrder {
-	index := sort.Search(len(orders), func(i int) bool {
-		cmp := so.getPrice().Cmp(orders[i].getPrice()) * direction
-		if cmp == 0 {
-			cmp = CmpTime(so.time, orders[i].time)
-		}
+func insertSort(levels []priceLevel, so sessionOrder, direction int) []priceLevel {
+	index := sort.Search(len(levels), func(i int) bool {
+		cmp := so.getPrice().Cmp(levels[i].price) * direction
 		return cmp >= 0
 	})
 
-	return append(orders[:index], append([]sessionOrder{so}, orders[index:]...)...)
+	if(index<len(levels) && levels[index].price==so.getPrice()) {
+		level := &levels[index];
+		level.orderList.pushBack(so)
+	} else {
+		// add new level
+		level := priceLevel{OrderList(),so.getPrice()}
+		level.orderList.pushBack(so)
+		levels = append(levels[:index], append([]priceLevel{level}, levels[index:]...)...)
+	}
+
+	return levels;
 }
 
 var nextTradeID int64 = 0
@@ -77,8 +92,8 @@ func matchTrades(book *orderBook) []trade {
 	var when = time.Now()
 
 	for len(book.bids) > 0 && len(book.asks) > 0 {
-		bid := book.bids[0]
-		ask := book.asks[0]
+		bid := book.bids[0].orderList.top()
+		ask := book.asks[0].orderList.top()
 
 		if !bid.getPrice().GreaterThanOrEqual(ask.getPrice()) {
 			break
@@ -137,26 +152,41 @@ func fill(order *Order, qty Fixed, price Fixed) {
 
 func (ob *orderBook) remove(so sessionOrder) error {
 
-	var removed bool
-
-	removeFN := func(orders *[]sessionOrder, so sessionOrder) bool {
-		for i, v := range *orders {
-			if v.order == so.order {
-				*orders = append((*orders)[:i], (*orders)[i+1:]...)
-				return true
-			}
-		}
-		return false
-	}
+	var levels []priceLevel
+	var direction int
 
 	if so.order.Side == Buy {
-		removed = removeFN(&ob.bids, so)
+		levels = ob.bids
+		direction = 1
 	} else {
-		removed = removeFN(&ob.asks, so)
+		levels = ob.asks
+		direction = -1
 	}
 
-	if !removed {
+	index := sort.Search(len(levels), func(i int) bool {
+		cmp := so.getPrice().Cmp(levels[i].price) * direction
+		return cmp >= 0
+	})
+
+	if index<len(levels) && levels[index].price.Cmp(so.getPrice())!=0 {
 		return OrderNotFound
+	}
+
+	level := &levels[index]
+	err := level.orderList.remove(so)
+
+	if err!=nil {
+		return err
+	}
+
+	if level.orderList.size==0 {
+		levels = append(levels[:index],levels[index+1:]...)
+	}
+	
+	if so.order.Side == Buy {
+		ob.bids = levels
+	} else {
+		ob.asks = levels
 	}
 
 	if so.order.IsActive() {
@@ -176,27 +206,19 @@ func (ob *orderBook) buildBook() *Book {
 	return book
 }
 
-func createBookLevels(orders []sessionOrder) []BookLevel {
+func createBookLevels(_levels []priceLevel) []BookLevel {
 	var levels []BookLevel
 
-	if len(orders) == 0 {
+	if len(_levels) == 0 {
 		return levels
 	}
-
-	price := orders[0].order.Price
-	quantity := ZERO
-
-	for _, v := range orders {
-		if v.order.Price.Equal(price) {
-			quantity = quantity.Add(v.order.Remaining)
-		} else {
-			bl := BookLevel{Price: price, Quantity: quantity}
-			levels = append(levels, bl)
-			price = v.order.Price
-			quantity = v.order.Remaining
+	for _, level := range _levels {
+		quantity := ZERO
+		for node := level.head; node!=nil; node = node.next {
+			quantity = quantity.Add(node.order.order.Remaining)
 		}
+		bl := BookLevel{Price: level.price, Quantity: quantity}
+		levels = append(levels, bl)
 	}
-	bl := BookLevel{Price: price, Quantity: quantity}
-	levels = append(levels, bl)
 	return levels
 }

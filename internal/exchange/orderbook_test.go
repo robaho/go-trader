@@ -41,10 +41,10 @@ func TestOrderBook(t *testing.T) {
 
 	b := ob.buildBook()
 	if len(b.Bids) != 1 {
-		t.Error("incorrect bids", b.Bids, ob)
+		t.Error("incorrect bids", b.Bids, &ob.bids)
 	}
 	if len(b.Asks) != 1 {
-		t.Error("incorrect asks", b.Asks, ob)
+		t.Error("incorrect asks", b.Asks, &ob.asks)
 	}
 
 	var o3 = LimitOrder(i, Buy, NewDecimal("100"), NewDecimal("10"))
@@ -56,6 +56,12 @@ func TestOrderBook(t *testing.T) {
 	var s4 = sessionOrder{ex, o4, time.Now()}
 
 	ob.add(s3)
+
+	b = ob.buildBook()
+	if len(b.Bids) != 1 {
+		t.Error("incorrect bids", b.Bids, &ob.bids)
+	}
+
 	ob.add(s4)
 
 	fmt.Println("the order book is ", &ob)
@@ -63,10 +69,10 @@ func TestOrderBook(t *testing.T) {
 	fmt.Println("the book is ", b)
 
 	if len(b.Bids) != 2 {
-		t.Error("incorrect bids", b.Bids, ob)
+		t.Error("incorrect bids", b.Bids, &ob.bids)
 	}
 	if len(b.Asks) != 1 {
-		t.Error("incorrect asks", b.Asks, ob)
+		t.Error("incorrect asks", b.Asks, &ob.asks)
 	}
 	if !b.Bids[0].Quantity.Equal(NewS("20")) {
 		t.Error("wrong quantity", b.Bids)
@@ -82,10 +88,10 @@ func TestOrderBook(t *testing.T) {
 	fmt.Println("the book is ", b)
 
 	if len(b.Bids) != 1 {
-		t.Error("incorrect bids", b.Bids, &ob)
+		t.Error("incorrect bids", b.Bids, &ob.bids)
 	}
 	if len(b.Asks) != 1 {
-		t.Error("incorrect asks", b.Asks, &ob)
+		t.Error("incorrect asks", b.Asks, &ob.asks)
 	}
 	if !b.Bids[0].Quantity.Equal(NewS("20")) {
 		t.Error("wrong quantity", b.Bids)
@@ -93,7 +99,7 @@ func TestOrderBook(t *testing.T) {
 
 	err = ob.remove(s3)
 	if err != nil {
-		t.Error("unexpected ", err)
+ 		t.Error("unexpected ", err)
 	}
 
 	fmt.Println("the order book is ", &ob)
@@ -101,13 +107,13 @@ func TestOrderBook(t *testing.T) {
 	fmt.Println("the book is ", b)
 
 	if len(b.Bids) != 1 {
-		t.Error("incorrect bids", b.Bids, &ob)
+		t.Error("incorrect bids", b.Bids, &ob.bids)
 	}
 	if len(b.Asks) != 1 {
-		t.Error("incorrect asks", b.Asks, &ob)
+		t.Error("incorrect asks", b.Asks, &ob.asks)
 	}
 	if !b.Bids[0].Quantity.Equal(NewS("10")) {
-		t.Error("wrong quantity", b.Bids)
+		t.Error("wrong quantity", b.Bids, &ob.bids)
 	}
 }
 
@@ -132,10 +138,10 @@ func TestOrderMatch(t *testing.T) {
 
 	b := ob.buildBook()
 	if len(b.Bids) != 1 {
-		t.Error("incorrect bids", b.Bids, ob)
+		t.Error("incorrect bids", b.Bids, &ob.bids)
 	}
 	if len(b.Asks) != 0 {
-		t.Error("incorrect asks", b.Asks, ob)
+		t.Error("incorrect asks", b.Asks, &ob.asks)
 	}
 	if len(trades) != 1 {
 		t.Error("wrong trades", trades)
@@ -172,10 +178,10 @@ func TestOrderMatchSweep(t *testing.T) {
 
 	b := ob.buildBook()
 	if len(b.Bids) != 1 {
-		t.Error("incorrect bids", b.Bids, ob)
+		t.Error("incorrect bids", b.Bids, &ob.bids)
 	}
 	if len(b.Asks) != 0 {
-		t.Error("incorrect asks", b.Asks, ob)
+		t.Error("incorrect asks", b.Asks, &ob.asks)
 	}
 	if len(trades) != 2 {
 		t.Error("wrong trades", trades)
