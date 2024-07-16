@@ -12,7 +12,7 @@ require (
 	github.com/quickfixgo/fix44 v0.1.0
 	github.com/quickfixgo/quickfix v0.9.0
 	github.com/robaho/fixed v0.0.0-20230815003229-929de1ea03c3
-	github.com/robaho/gocui v0.3.0
+	github.com/robaho/gocui v0.3.1
 	github.com/shopspring/decimal v1.3.1
 	golang.org/x/net v0.19.0
 	google.golang.org/grpc v1.60.0

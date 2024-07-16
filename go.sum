@@ -38,6 +38,8 @@ github.com/robaho/fixed v0.0.0-20230815003229-929de1ea03c3 h1:z2AXOxvJ7rXsbyv3s9
 github.com/robaho/fixed v0.0.0-20230815003229-929de1ea03c3/go.mod h1:9YjDu6DCo4pkAT+5VYIW1CPk2nh9CnvT/x5YfhSYlnQ=
 github.com/robaho/gocui v0.3.0 h1:xX5dcUDCUlO/xXA6Jzh979t+7tLkLM4KeToIioJrfrE=
 github.com/robaho/gocui v0.3.0/go.mod h1:pGoMrUaM3DO8ORottR2+ffXjklvRVW0pUnXF77AK6Ow=
+github.com/robaho/gocui v0.3.1 h1:8CfmzgaK/Cgx3tMEsYDyvxGIkHZ6pYn5m826YG0oUeo=
+github.com/robaho/gocui v0.3.1/go.mod h1:pGoMrUaM3DO8ORottR2+ffXjklvRVW0pUnXF77AK6Ow=
 github.com/shopspring/decimal v1.3.1 h1:2Usl1nmF/WZucqkFZhnfFYxxxu8LG21F6nPQBE5gKV8=
 github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/stretchr/objx v0.5.0 h1:1zr/of2m5FGMsad5YfcqgdqdWrIhu+EBEJRhR1U7z/c=
