@@ -83,3 +83,4 @@ localhost:8080/api/stats/SYMBOL
 
 ![client screen shot](doc/clientss.png)
 ![web screen shot](doc/webss.png)
+![lit screen shot](doc/litss.png)
