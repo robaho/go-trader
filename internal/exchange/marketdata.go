@@ -245,7 +245,7 @@ func startMarketData() {
 
 	props, err := NewProperties("configs/got_settings")
 	if err != nil {
-		panic("unable to read multicast addr")
+		panic(err)
 	}
 	saddr := props.GetString("multicast_addr", "")
 	if saddr == "" {
