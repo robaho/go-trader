@@ -87,7 +87,7 @@ func main() {
 
 	instrument := IMap.GetBySymbol(callback.symbol)
 	if instrument == nil {
-		log.Fatal("unable symbol", symbol)
+		log.Fatal("unknown symbol", callback.symbol)
 	}
 
 	var updates uint64
@@ -148,12 +148,12 @@ func main() {
 				<-callback.ch
 			}
 		}
-		h.Add(float64(time.Now().Sub(now).Nanoseconds()))
+		h.Add(float64(time.Since(now).Nanoseconds()))
 		if *delay != 0 {
 			time.Sleep(time.Duration(int64(*delay)) * time.Millisecond)
 		}
 		atomic.AddUint64(&updates, 1)
-		if time.Now().Sub(start).Seconds() > 10 {
+		if time.Since(start).Seconds() > 10 {
 			fmt.Printf("updates per second %d, avg rtt %dus, 10%% rtt %dus 99%% rtt %dus\n", updates/10, int(h.Mean()/1000.0), int(h.Quantile(.10)/1000.0), int(h.Quantile(.99)/1000.0))
 			updates = 0
 			start = time.Now()
