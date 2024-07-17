@@ -25,8 +25,8 @@ export class IndexPage extends LitElement {
 
     render() {
         return html`
-            <div style="display: flex; flex-direction: row; height: 100%; width: 100%; gap: 10px">
-                <div style="align: top; display: flex; flex-direction: column">
+            <div style="display: flex; flex-direction: row; height: 100%; width: 100%; gap: 10px; min-width: 0px; margin-left: 10px">
+                <div style="align: top; display: flex; flex-direction: column; flex-shrink:0; flex-grow:0">
                     <div><div>Instruments</div><hr></div>
                     ${this.instruments.map(b => html`
                         <sl-tooltip placement="right">
@@ -34,8 +34,8 @@ export class IndexPage extends LitElement {
                             <sl-button variant="text" size="medium" @click=${() => this.maybeAddSymbol(b)}>${b}</sl-button>
                         </sl-tooltip>`)}
                 </div>
-                <div >
-                    <div style="display:flex; flex-direction: row; gap: 5px; flex-wrap: wrap">
+                <div>
+                    <div style="align:top; display:flex; flex-direction: row; gap: 5px; flex-wrap: wrap; flex-grow: 1">
                         ${repeat(this.books, (key: string) => key, (b: string) => html`<book-element @closed="${() => this.books = this.books.filter(e => e != b)}" symbol="${b}"></book-element>
                     </div>
                 </div>
