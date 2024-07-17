@@ -168,7 +168,7 @@ func (ob *orderBook) remove(so sessionOrder) error {
 		return cmp >= 0
 	})
 
-	if index<len(levels) && levels[index].price.Cmp(so.getPrice())!=0 {
+	if index>=len(levels) || levels[index].price.Cmp(so.getPrice())!=0 {
 		return OrderNotFound
 	}
 
