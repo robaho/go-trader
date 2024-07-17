@@ -3,9 +3,11 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 const iconsPath = 'node_modules/@shoelace-style/shoelace/dist/assets/icons';
 
+console.log(process.cwd());
+
 // https://vitejs.dev/config/
-export default defineConfig({
-    base: '/lit',
+export default defineConfig((env) => { return {
+    base: env.command === 'build' ? '/lit/' : undefined,
     resolve: {
         alias: [
             {
@@ -35,4 +37,4 @@ export default defineConfig({
             '/api': 'http://localhost:8080'
         }
     }
-});
+}});
