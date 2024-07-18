@@ -12,40 +12,34 @@ import (
 var IMap instrumentMap
 
 type instrumentMap struct {
-	sync.RWMutex
 	id       int64
-	bySymbol map[string]Instrument
-	byID     map[int64]Instrument
+	bySymbol sync.Map
+	byID     sync.Map
 }
 
 func (im *instrumentMap) GetBySymbol(symbol string) Instrument {
-	im.RLock()
-	defer im.RUnlock()
 
-	i, ok := im.bySymbol[symbol]
+	i, ok := im.bySymbol.Load(symbol)
 	if !ok {
 		return nil
 	}
-	return i
+	return i.(Instrument)
 }
 func (im *instrumentMap) GetByID(id int64) Instrument {
-	im.RLock()
-	defer im.RUnlock()
-
-	i, ok := im.byID[id]
+	i, ok := im.byID.Load(id)
 	if !ok {
 		return nil
 	}
-	return i
+	return i.(Instrument)
 }
 func (im *instrumentMap) AllSymbols() []string {
-	im.RLock()
-	defer im.RUnlock()
-
 	var symbols []string
-	for k, _ := range im.bySymbol {
-		symbols = append(symbols, k)
+
+	fn := func (key any,value any) bool {
+		symbols = append(symbols, key.(string))
+		return true
 	}
+	im.bySymbol.Range(fn)
 	return symbols
 }
 
@@ -54,12 +48,10 @@ func (im *instrumentMap) AllSymbols() []string {
 func (im *instrumentMap) nextID() int64 {
 	return atomic.AddInt64(&im.id, 1)
 }
-func (im *instrumentMap) Put(instrument Instrument) {
-	im.Lock()
-	defer im.Unlock()
 
-	im.bySymbol[instrument.Symbol()] = instrument
-	im.byID[instrument.ID()] = instrument
+func (im *instrumentMap) Put(instrument Instrument) {
+	im.bySymbol.Store(instrument.Symbol(),instrument)
+	im.byID.Store(instrument.ID(), instrument)
 }
 
 // load the instrument map from a file, see configs/instruments.txt for the format
@@ -90,6 +82,4 @@ func (im *instrumentMap) Load(filepath string) error {
 }
 
 func init() {
-	IMap.bySymbol = make(map[string]Instrument)
-	IMap.byID = make(map[int64]Instrument)
 }
