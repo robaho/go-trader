@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/robaho/go-trader/pkg/protocol"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"os"
@@ -15,15 +12,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/robaho/go-trader/pkg/protocol"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+
 	"github.com/quickfixgo/quickfix"
 	"github.com/robaho/go-trader/internal/exchange"
 	"github.com/robaho/go-trader/pkg/common"
+
+	_ "net/http/pprof"
 )
 
-import _ "net/http/pprof"
-
 func main() {
-
 	fix := flag.String("fix", "configs/qf_got_settings", "set the fix session file")
 	props := flag.String("props", "configs/got_settings", "set the exchange properties file")
 	instruments := flag.String("instruments", "configs/instruments.txt", "the instrument file")
@@ -106,54 +106,59 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	for scanner.Scan() {
-		s := scanner.Text()
-		parts := strings.Fields(s)
-		if len(parts) == 0 {
-			goto again
-		}
-		if "help" == parts[0] {
-			fmt.Println("The available commands are: quit, sessions, book SYMBOL, watch SYMBOL, unwatch SYMBOL, list")
-		} else if "quit" == parts[0] {
-			break
-		} else if "sessions" == parts[0] {
-			fmt.Println("Active sessions: ", ex.ListSessions())
-		} else if "book" == parts[0] {
-			book := exchange.GetBook(parts[1])
-			if book != nil {
-				fmt.Println(book)
+	go func() {
+		for scanner.Scan() {
+			s := scanner.Text()
+			parts := strings.Fields(s)
+			if len(parts) == 0 {
+				goto again
 			}
-		} else if "watch" == parts[0] && len(parts) == 2 {
-			fmt.Println("You are now watching ", parts[1], ", use 'unwatch ", parts[1], "' to stop.")
-			watching.Store(parts[1], "watching")
-			go func(symbol string) {
-				var lastBook *common.Book = nil
-				for {
-					if _, ok := watching.Load(symbol); !ok {
-						break
-					}
-					book := exchange.GetBook(symbol)
-					if book != nil {
-						if lastBook != book {
-							fmt.Println(book)
-							lastBook = book
-						}
-					}
-					time.Sleep(1 * time.Second)
+			if "help" == parts[0] {
+				fmt.Println("The available commands are: quit, sessions, book SYMBOL, watch SYMBOL, unwatch SYMBOL, list")
+			} else if "quit" == parts[0] {
+				break
+			} else if "sessions" == parts[0] {
+				fmt.Println("Active sessions: ", ex.ListSessions())
+			} else if "book" == parts[0] {
+				book := exchange.GetBook(parts[1])
+				if book != nil {
+					fmt.Println(book)
 				}
-			}(parts[1])
-		} else if "unwatch" == parts[0] && len(parts) == 2 {
-			watching.Delete(parts[1])
-			fmt.Println("You are no longer watching ", parts[1])
-		} else if "list" == parts[0] {
-			for _, symbol := range common.IMap.AllSymbols() {
-				instrument := common.IMap.GetBySymbol(symbol)
-				fmt.Println(instrument)
+			} else if "watch" == parts[0] && len(parts) == 2 {
+				fmt.Println("You are now watching ", parts[1], ", use 'unwatch ", parts[1], "' to stop.")
+				watching.Store(parts[1], "watching")
+				go func(symbol string) {
+					var lastBook *common.Book = nil
+					for {
+						if _, ok := watching.Load(symbol); !ok {
+							break
+						}
+						book := exchange.GetBook(symbol)
+						if book != nil {
+							if lastBook != book {
+								fmt.Println(book)
+								lastBook = book
+							}
+						}
+						time.Sleep(1 * time.Second)
+					}
+				}(parts[1])
+			} else if "unwatch" == parts[0] && len(parts) == 2 {
+				watching.Delete(parts[1])
+				fmt.Println("You are no longer watching ", parts[1])
+			} else if "list" == parts[0] {
+				for _, symbol := range common.IMap.AllSymbols() {
+					instrument := common.IMap.GetBySymbol(symbol)
+					fmt.Println(instrument)
+				}
+			} else {
+				fmt.Println("Unknown command, '", s, "' use 'help'")
 			}
-		} else {
-			fmt.Println("Unknown command, '", s, "' use 'help'")
+		again:
+			fmt.Print("Command?")
 		}
-	again:
-		fmt.Print("Command?")
-	}
+	}()
+
+	// Keep the main goroutine running
+	select {}
 }
