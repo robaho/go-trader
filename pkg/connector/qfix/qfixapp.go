@@ -2,9 +2,10 @@ package qfix
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/quickfixgo/fix44/securitydefinition"
 	"github.com/robaho/fixed"
-	"strings"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/fix44/executionreport"
@@ -51,6 +52,7 @@ func (app *myApplication) ToApp(message *quickfix.Message, sessionID quickfix.Se
 }
 
 func (app *myApplication) FromAdmin(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	// fmt.Fprintln(app.c.log, "received admin",message);
 	return nil
 }
 

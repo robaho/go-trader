@@ -10,6 +10,4 @@ HeartBtInt=30
 ResetOnDisconnect=Y
 RestOnLogout=Y
 
-[SESSION]
-SenderCompID=CLIENT
-ConnectionType=initiator
+# sessions are dynamically added with a default SenderCompID=CLIENT

@@ -2,11 +2,12 @@ package exchange
 
 import (
 	"fmt"
+	"strconv"
+	"sync"
+
 	"github.com/quickfixgo/fix44/securitydefinition"
 	"github.com/quickfixgo/fix44/securitylistrequest"
 	. "github.com/robaho/fixed"
-	"strconv"
-	"sync"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -61,6 +62,7 @@ func (app *myApplication) OnLogout(sessionID quickfix.SessionID) {
 }
 
 func (app *myApplication) ToAdmin(message *quickfix.Message, sessionID quickfix.SessionID) {
+	// fmt.Println("sending admin, ", message)
 }
 
 func (app *myApplication) ToApp(message *quickfix.Message, sessionID quickfix.SessionID) error {
@@ -68,6 +70,7 @@ func (app *myApplication) ToApp(message *quickfix.Message, sessionID quickfix.Se
 }
 
 func (app *myApplication) FromAdmin(message *quickfix.Message, sessionID quickfix.SessionID) quickfix.MessageRejectError {
+	// fmt.Println("received admin, ", message)
 	return nil
 }
 

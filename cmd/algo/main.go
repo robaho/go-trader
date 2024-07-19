@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/robaho/fixed"
 	"log"
 	"time"
+
+	"github.com/robaho/fixed"
 
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/robaho/go-trader/pkg/connector"
@@ -114,6 +115,7 @@ func main() {
 	fix := flag.String("fix", "configs/qf_algo_settings", "set the fix session file")
 	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 	offset := flag.Float64("offset", 1.0, "price offset for entry exit")
+	senderCompID := flag.String("id", "ALGO", "set the SenderCompID")
 
 	flag.Parse()
 
@@ -125,6 +127,7 @@ func main() {
 		panic(err)
 	}
 	p.SetString("fix", *fix)
+	p.SetString("senderCompID",*senderCompID)
 
 	exchange = connector.NewConnector(&callback, p, nil)
 

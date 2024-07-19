@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/robaho/go-trader/pkg/protocol"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"os"
@@ -15,12 +12,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/robaho/go-trader/pkg/protocol"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+
 	"github.com/quickfixgo/quickfix"
 	"github.com/robaho/go-trader/internal/exchange"
 	"github.com/robaho/go-trader/pkg/common"
-)
 
-import _ "net/http/pprof"
+	_ "net/http/pprof"
+)
 
 func main() {
 
@@ -31,6 +32,9 @@ func main() {
 	profile := flag.Bool("profile", false, "create CPU profiling output")
 
 	flag.Parse()
+
+	runtime.SetBlockProfileRate(1000)
+	runtime.SetMutexProfileFraction(1000)
 
 	p, err := common.NewProperties(*props)
 	if err != nil {
@@ -68,7 +72,10 @@ func main() {
 
 	ex.Start()
 
-	_ = acceptor.Start()
+	err = acceptor.Start()
+	if err!=nil {
+		panic(err)
+	}
 	defer acceptor.Stop()
 
 	// start grpc protocol

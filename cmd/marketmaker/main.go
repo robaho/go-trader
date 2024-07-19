@@ -44,12 +44,14 @@ func main() {
 	var callback = MyCallback{make(chan bool, 128), ""}
 
 	symbol := flag.String("symbol", "IBM", "set the symbol")
-	fix := flag.String("fix", "configs/qf_mm1_settings", "set the fix session file")
+	fix := flag.String("fix", "configs/qf_connector_settings", "set the fix session file")
 	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 	delay := flag.Int("delay", 0, "set the delay in ms after each quote, 0 to disable")
 	proto := flag.String("proto", "", "override protocol, grpc or fix")
 	duration := flag.Int("duration", 0, "run for N seconds, 0 = forever")
 	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
+	senderCompID := flag.String("id", "MM", "set the SenderCompID")
+	symbolAsCompID := flag.Bool("sid", false, "use symbol as SenderCompID")
 
 	flag.Parse()
 
@@ -72,6 +74,12 @@ func main() {
 		p.SetString("protocol", *proto)
 	}
 	p.SetString("fix", *fix)
+
+	if *symbolAsCompID {
+		p.SetString("senderCompID", *symbol)
+	} else {
+		p.SetString("senderCompID", *senderCompID)
+	}
 
 	var exchange = connector.NewConnector(&callback, p, nil)
 

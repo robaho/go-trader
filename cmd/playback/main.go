@@ -39,6 +39,7 @@ func main() {
 	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 	speed := flag.Float64("speed", 1.0, "set the playback speed")
 	playback := flag.String("file", "playback.txt", "set the playback file")
+	senderCompID := flag.String("id", "PLAYBACK", "set the SenderCompID")
 
 	flag.Parse()
 
@@ -47,6 +48,7 @@ func main() {
 		panic(err)
 	}
 	p.SetString("fix", *fix)
+	p.SetString("senderCompID",*senderCompID)
 
 	var exchange = connector.NewConnector(&callback, p, nil)
 

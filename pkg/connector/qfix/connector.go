@@ -1,15 +1,17 @@
 package qfix
 
 import (
-	"github.com/quickfixgo/fix44/securitydefinitionrequest"
-	"github.com/quickfixgo/fix44/securitylistrequest"
-	. "github.com/robaho/fixed"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/quickfixgo/fix44/securitydefinitionrequest"
+	"github.com/quickfixgo/fix44/securitylistrequest"
+	. "github.com/robaho/fixed"
 
 	"github.com/quickfixgo/enum"
 	"github.com/quickfixgo/field"
@@ -36,6 +38,7 @@ type qfixConnector struct {
 	settings   string
 	log        io.Writer
 	secReqId   int64
+	senderCompID	   string
 }
 
 func (c *qfixConnector) IsConnected() bool {
@@ -52,8 +55,8 @@ func (c *qfixConnector) Connect() error {
 		panic(err)
 	}
 	appSettings, err := quickfix.ParseSettings(cfg)
-	if err != nil {
-		panic(err)
+	if err != nil && (c.senderCompID=="" && err.Error()=="no sessions declared") {
+		panic(fmt.Errorf("no sessions declared and compID not set"))
 	}
 	storeFactory := quickfix.NewMemoryStoreFactory()
 	//logFactory, _ := quickfix.NewFileLogFactory(appSettings)
@@ -65,13 +68,26 @@ func (c *qfixConnector) Connect() error {
 	} else {
 		logFactory = quickfix.NewNullLogFactory()
 	}
+
+	if c.senderCompID!="" {
+		if len(appSettings.SessionSettings())>0 {
+			panic("cannot set compID and also specify session configuration")
+		}
+		// override sender comp ID
+		ss := quickfix.SessionSettings{}
+		ss.Set("SenderCompID",c.senderCompID);
+		ss.Set("ConnectionType","initiator");
+		c.sessionID, _ = appSettings.AddSession(&ss)
+	} else {
+		c.sessionID = getSession(appSettings.SessionSettings())
+	}
+
 	initiator, err := quickfix.NewInitiator(newApplication(c), storeFactory, appSettings, logFactory)
 	if err != nil {
 		panic(err)
 	}
 
 	c.initiator = initiator
-	c.sessionID = getSession(appSettings.SessionSettings())
 
 	err = initiator.Start()
 	if err != nil {
@@ -255,7 +271,8 @@ func NewConnector(callback ConnectorCallback, props Properties, logOutput io.Wri
 	}
 
 	filename := props.GetString("fix", "")
-	c := &qfixConnector{settings: filename, log: logOutput}
+	senderCompID := props.GetString("senderCompID", "")
+	c := &qfixConnector{settings: filename, log: logOutput, senderCompID: senderCompID}
 	c.callback = callback
 
 	return c

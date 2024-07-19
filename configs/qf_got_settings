@@ -10,24 +10,7 @@ ResetOnLogout=Y
 ResetOnDisconnect=Y
 PersistMessages=N
 Logging=N
+DynamicSessions=Y
 
 [SESSION]
-TargetCompID=MM1
-
-[SESSION]
-TargetCompID=MM2
-
-[SESSION]
-TargetCompID=MM3
-
-[SESSION]
-TargetCompID=MM4
-
-[SESSION]
-TargetCompID=CLIENT
-
-[SESSION]
-TargetCompID=PLAYBACK
-
-[SESSION]
-TargetCompID=ALGO
+TargetCompID=*

@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/robaho/fixed"
 	"log"
 	"strings"
 	"sync"
+
+	"github.com/robaho/fixed"
 
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/robaho/go-trader/pkg/connector"
@@ -381,7 +382,7 @@ func printCommand(v *gocui.View) {
 func main() {
 	var callback = MyCallback{}
 
-	fix := flag.String("fix", "configs/qf_client_settings", "set the fix session file")
+	fix := flag.String("fix", "configs/qf_connector_settings", "set the fix session file")
 	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 
 	flag.Parse()
