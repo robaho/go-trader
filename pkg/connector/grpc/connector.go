@@ -28,6 +28,7 @@ type grpcConnector struct {
 	log        io.Writer
 }
 
+//TODO need reference count, since grpc.ClientConn is shared to allow for complete clean-up
 var clients map[string]*grpc.ClientConn = make(map[string]*grpc.ClientConn)
 var connectionLock = sync.Mutex{}
 
@@ -344,7 +345,7 @@ func (c *grpcConnector) handleExecutionReport(rpt *protocol.ExecutionReport) {
 			side = Sell
 		}
 
-		fill := &Fill{instrument, id == 0, order, exchangeId, lastQty, lastPx, side, false}
+		fill := &Fill{Instrument: instrument, IsQuote: id == 0, Order: order, ExchangeID: exchangeId, Quantity: lastQty, Price: lastPx, Side: side, IsLegTrade: false}
 		c.callback.OnFill(fill)
 	}
 
