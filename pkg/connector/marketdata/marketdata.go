@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"sync/atomic"
 
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/robaho/go-trader/pkg/protocol"
@@ -17,22 +18,39 @@ var replayRequests = make(chan protocol.ReplayRequest, 1000)
 
 type marketDataReceiver struct {
 	c        ExchangeConnector
-	callback ConnectorCallback
+	callbacks atomic.Value
 	log      io.Writer
 	lastSequence map[Instrument]uint64
 	seqLock sync.Mutex
 }
 
+var receivers = make(map[string]*marketDataReceiver)
+var mdLock = sync.Mutex{}
+
 // StartMarketDataReceiver starts the multicast marketdata processor
 func StartMarketDataReceiver(c ExchangeConnector, callback ConnectorCallback, props Properties, logOutput io.Writer) {
-	// read settings and create socket
+	mdLock.Lock()
+	defer mdLock.Unlock()
 
-	md := marketDataReceiver{c: c, callback: callback, log: logOutput, lastSequence: make(map[Instrument]uint64)}
+	// read settings and create socket
 
 	saddr := props.GetString("multicast_addr", "")
 	if saddr == "" {
 		panic("unable to read multicast addr")
 	}
+
+	existing,ok := receivers[saddr]
+	if ok {
+		fmt.Fprintln(logOutput,"adding connector to existing md connector",saddr)
+		// existing receiver for this address, so only add our callback
+		callbacks := existing.callbacks.Load().([]ConnectorCallback)
+		callbacks = append(callbacks, callback)
+		existing.callbacks.Store(callbacks)
+		return
+	}
+
+	md := marketDataReceiver{c: c, log: logOutput, lastSequence: make(map[Instrument]uint64)}
+	md.callbacks.Store([]ConnectorCallback{callback})
 
 	intf := props.GetString("multicast_intf", "lo0")
 	if intf == "" {
@@ -59,6 +77,8 @@ func StartMarketDataReceiver(c ExchangeConnector, callback ConnectorCallback, pr
 	if err != nil {
 		panic(err)
 	}
+
+	receivers[saddr]=&md
 
 	go func() {
 		var packetNumber uint64 = 0
@@ -159,18 +179,23 @@ func (c *marketDataReceiver) processPacket(packet []byte) {
 
 	buf := bytes.NewBuffer(packet)
 
+	callbacks := c.callbacks.Load().([]ConnectorCallback)
+
 	for buf.Len() > 0 {
 		book, trades := protocol.DecodeMarketEvent(buf)
 		if book != nil {
 			last, ok := c.lastSequence[book.Instrument]
 			if (ok && book.Sequence > last) || !ok {
-				c.callback.OnBook(book)
+				for _,callback := range callbacks {
+					callback.OnBook(book)
+				}
 				c.lastSequence[book.Instrument] = book.Sequence
 			}
 		}
 		for _, trade := range trades {
-			c.callback.OnTrade(&trade)
+			for _,callback := range callbacks {
+				callback.OnTrade(&trade)
+			}
 		}
 	}
-
 }
