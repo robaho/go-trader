@@ -54,22 +54,26 @@ client
 
 # performance
 
-Using the quickfixgo connector:
+Configuration:
 
-- test machine is a 3.4 ghz i7 (4 core,8 thread), running osx
-- clients and exchange process are running on the same machine
+- client machine is a Mac Mini M1, running OSX Sonoma
+- server machine is a 4.0 ghz i7 iMac (4 core, 8 thread), running OSX Monterey
+- using 1 gbit ethernet connection
 - a quote is a double-sided (bid & ask) 
-- a timing is measured from the quote message generation to the reception of the multicast market data
+- timings are measured from the quote message generation on the client, to the reception of the multicast market data on the client
 
-**1 market maker can perform 6k round-trip quotes/sec**
+**using `marketmaker -bench 75 -proto fix`**
 
-**4 market makers can perform 16k round-trip quotes/sec** 
+75k+ round-trip quotes per second with an average latency of 1ms
 
-Using the gRPC connector:
+**using `marketmaker -bench 150 -proto grpc`**
 
-**1 market maker can perform 12k round-trip quotes/sec**
+**300k+** round-trip quotes per second with an average latency of 500us
 
-**4 market makers can perform 30k round-trip quotes/sec** 
+_The CPUs are saturated on both the client and server._
+
+## 3 microsecs per roundtrip quote over the network ! ##
+<br>
 
 # REST api
 
