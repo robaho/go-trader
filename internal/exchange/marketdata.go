@@ -277,9 +277,12 @@ func startMarketData() {
 	if err != nil {
 		panic(err)
 	}
-	err = c.SetWriteBuffer(props.GetBytes("marketdata_buffer",1024 * 1024))
+	bufferSize := props.GetBytes("marketdata_buffer",1024 * 1024)
+	err = c.SetWriteBuffer(bufferSize)
 	if err!=nil {
-		fmt.Println("unable to set udp write buffer size",err)
+		fmt.Println("unable to set market data write buffer size to",bufferSize,err)
+	} else {
+		fmt.Println("set market data buffer size",bufferSize)
 	}
 
 	udpCon = c
