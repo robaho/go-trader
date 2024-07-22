@@ -20,7 +20,6 @@ type grpcConnector struct {
 	nextQuote int64
 	// holds OrderID->*Order, concurrent since notifications/updates may arrive while order is being processed
 	orders   sync.Map
-	conn     *grpc.ClientConn
 	stream   protocol.Exchange_ConnectionClient
 	loggedIn StatusBool
 	// true after all instruments are downloaded from exchange
@@ -29,23 +28,32 @@ type grpcConnector struct {
 	log        io.Writer
 }
 
+var clients map[string]*grpc.ClientConn = make(map[string]*grpc.ClientConn)
+var connectionLock = sync.Mutex{}
+
 func (c *grpcConnector) IsConnected() bool {
 	return c.connected
 }
 
 func (c *grpcConnector) Connect() error {
+	connectionLock.Lock()
+	defer connectionLock.Unlock()
+
 	if c.connected {
 		return AlreadyConnected
 	}
 
 	addr := c.props.GetString("grpc_host", "localhost") + ":" + c.props.GetString("grpc_port", "5000")
 
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
-	if err != nil {
-		return err
+	conn, ok := clients[addr]
+	var err error
+	if !ok {
+		conn, err = grpc.Dial(addr, grpc.WithInsecure())
+		if err != nil {
+			return err
+		}
+		clients[addr]=conn
 	}
-
-	c.conn = conn
 
 	client := protocol.NewExchangeClient(conn)
 
@@ -127,7 +135,7 @@ func (c *grpcConnector) Disconnect() error {
 	if !c.connected {
 		return NotConnected
 	}
-	c.conn.Close()
+	c.stream.CloseSend()
 	c.connected = false
 	c.loggedIn.SetFalse()
 	return nil
