@@ -7,6 +7,8 @@ import (
 	"math/rand"
 	"os"
 	"runtime/pprof"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -41,9 +43,9 @@ func (*MyCallback) OnTrade(trade *Trade) {
 }
 
 func main() {
-	var callback = MyCallback{make(chan bool, 128), ""}
 
 	symbol := flag.String("symbol", "IBM", "set the symbol")
+	symbols := flag.String("symbols", "", "set the comma delimited list of symbols")
 	fix := flag.String("fix", "configs/qf_connector_settings", "set the fix session file")
 	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 	delay := flag.Int("delay", 0, "set the delay in ms after each quote, 0 to disable")
@@ -55,6 +57,20 @@ func main() {
 
 	flag.Parse()
 
+	quotedSymbols := make([]string,0);
+
+	if(*symbols!="") {
+		quotedSymbols = append(quotedSymbols,strings.Split(*symbols,",")...)
+	} else if(*symbol!="") {
+		quotedSymbols = append(quotedSymbols,*symbol)
+	}
+
+	fmt.Println("quoted symbols: ",strings.Join(quotedSymbols,","))
+
+	if len(quotedSymbols)==0 {
+		panic("most provide either symbols or symbol")
+	}
+
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
@@ -64,8 +80,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	callback.symbol = *symbol
-
 	p, err := NewProperties(*props)
 	if err != nil {
 		panic(err)
@@ -74,12 +88,32 @@ func main() {
 		p.SetString("protocol", *proto)
 	}
 	p.SetString("fix", *fix)
+	p.SetString("senderCompID", *senderCompID)
 
-	if *symbolAsCompID {
-		p.SetString("senderCompID", *symbol)
-	} else {
-		p.SetString("senderCompID", *senderCompID)
+	if len(quotedSymbols)>0 {
+		// have to use symbol as senderCompID if quoting multiple symbols since multiple connections are used
+		*symbolAsCompID=true;
 	}
+
+	var wg sync.WaitGroup
+
+	for _,symbol := range quotedSymbols {
+		wg.Add(1)
+		go quoteSymbol(symbol,p,*duration,*delay,*symbolAsCompID, &wg)
+	}
+	wg.Wait()
+}
+
+func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCompID bool,wg *sync.WaitGroup) {
+	defer wg.Done()
+	p = p.Clone()
+
+	if symbolAsCompID {
+		fmt.Println("setting senderCompID to",symbol)
+		p.SetString("senderCompID", symbol)
+	}
+
+	var callback = MyCallback{make(chan bool, 128), symbol}
 
 	var exchange = connector.NewConnector(&callback, p, nil)
 
@@ -88,20 +122,20 @@ func main() {
 		panic("exchange is not connected")
 	}
 
-	err = exchange.DownloadInstruments()
+	err := exchange.DownloadInstruments()
 	if err != nil {
 		panic(err)
 	}
 
-	instrument := IMap.GetBySymbol(callback.symbol)
+	instrument := IMap.GetBySymbol(symbol)
 	if instrument == nil {
-		log.Fatal("unknown symbol", callback.symbol)
+		log.Fatal("unknown symbol", symbol)
 	}
 
 	var updates uint64
 
 	start := time.Now()
-	end := start.Add(time.Duration(int64(*duration)) * time.Second)
+	end := start.Add(time.Duration(int64(duration)) * time.Second)
 
 	fmt.Println("sending quotes on", instrument.Symbol(), "...")
 
@@ -117,7 +151,7 @@ func main() {
 
 	h := gohistogram.NewHistogram(50)
 
-	for *duration == 0 || time.Now().Before(end) {
+	for duration == 0 || time.Now().Before(end) {
 		var delta = 1
 		var r = r.Intn(10)
 		if r <= 2 {
@@ -152,13 +186,14 @@ func main() {
 			}
 			<-callback.ch
 			// drain channel
-			for len(callback.ch) > 0 {
-				<-callback.ch
+			if len(callback.ch) > 0 {
+				for range callback.ch {
+				}
 			}
 		}
 		h.Add(float64(time.Since(now).Nanoseconds()))
-		if *delay != 0 {
-			time.Sleep(time.Duration(int64(*delay)) * time.Millisecond)
+		if delay != 0 {
+			time.Sleep(time.Duration(int64(delay)) * time.Millisecond)
 		}
 		atomic.AddUint64(&updates, 1)
 		if time.Since(start).Seconds() > 10 {

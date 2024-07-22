@@ -19,13 +19,15 @@ type marketDataReceiver struct {
 	c        ExchangeConnector
 	callback ConnectorCallback
 	log      io.Writer
+	lastSequence map[Instrument]uint64
+	seqLock sync.Mutex
 }
 
 // StartMarketDataReceiver starts the multicast marketdata processor
 func StartMarketDataReceiver(c ExchangeConnector, callback ConnectorCallback, props Properties, logOutput io.Writer) {
 	// read settings and create socket
 
-	md := marketDataReceiver{c: c, callback: callback, log: logOutput}
+	md := marketDataReceiver{c: c, callback: callback, log: logOutput, lastSequence: make(map[Instrument]uint64)}
 
 	saddr := props.GetString("multicast_addr", "")
 	if saddr == "" {
@@ -62,12 +64,13 @@ func StartMarketDataReceiver(c ExchangeConnector, callback ConnectorCallback, pr
 		var packetNumber uint64 = 0
 		l, err := net.ListenMulticastUDP("udp", _intf, addr)
 		if err != nil {
+			fmt.Println("unable to open multicast socket")
 			panic(err)
 		}
 		log.Println("listening for market data on", l.LocalAddr())
 		l.SetReadBuffer(16 * 1024 * 1024)
+		b := make([]byte, protocol.MaxMsgSize)
 		for {
-			b := make([]byte, protocol.MaxMsgSize)
 			n, _, err := l.ReadFromUDP(b)
 			if err != nil {
 				log.Fatal("ReadFromUDP failed:", err)
@@ -134,7 +137,7 @@ func (c *marketDataReceiver) packetReceived(expected uint64, buf []byte) uint64 
 	if pn < expected {
 		// server restart, reset the packet numbers
 		expected = 0
-		lastSequence = make(map[Instrument]uint64)
+		c.lastSequence = make(map[Instrument]uint64)
 	}
 
 	if expected != 0 && pn != expected {
@@ -148,12 +151,9 @@ func (c *marketDataReceiver) packetReceived(expected uint64, buf []byte) uint64 
 	return pn + 1
 }
 
-var lastSequence = make(map[Instrument]uint64)
-var seqLock = sync.Mutex{}
-
 func (c *marketDataReceiver) processPacket(packet []byte) {
-	seqLock.Lock() // need locking because the main md go routine and the replay go routine call through here
-	defer seqLock.Unlock()
+	c.seqLock.Lock() // need locking because the main md go routine and the replay go routine call through here
+	defer c.seqLock.Unlock()
 
 	packet = packet[8:] // skip over packet number
 
@@ -162,10 +162,10 @@ func (c *marketDataReceiver) processPacket(packet []byte) {
 	for buf.Len() > 0 {
 		book, trades := protocol.DecodeMarketEvent(buf)
 		if book != nil {
-			last, ok := lastSequence[book.Instrument]
+			last, ok := c.lastSequence[book.Instrument]
 			if (ok && book.Sequence > last) || !ok {
 				c.callback.OnBook(book)
-				lastSequence[book.Instrument] = book.Sequence
+				c.lastSequence[book.Instrument] = book.Sequence
 			}
 		}
 		for _, trade := range trades {

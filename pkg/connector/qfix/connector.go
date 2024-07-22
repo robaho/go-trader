@@ -272,8 +272,7 @@ func NewConnector(callback ConnectorCallback, props Properties, logOutput io.Wri
 
 	filename := props.GetString("fix", "")
 	senderCompID := props.GetString("senderCompID", "")
-	c := &qfixConnector{settings: filename, log: logOutput, senderCompID: senderCompID}
-	c.callback = callback
+	c := &qfixConnector{settings: filename, log: logOutput, senderCompID: senderCompID, callback: callback}
 
 	return c
 }

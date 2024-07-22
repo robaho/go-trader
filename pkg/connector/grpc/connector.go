@@ -2,15 +2,16 @@ package grpc
 
 import (
 	"context"
-	. "github.com/robaho/fixed"
-	. "github.com/robaho/go-trader/pkg/common"
-	"github.com/robaho/go-trader/pkg/protocol"
-	"google.golang.org/grpc"
 	"io"
 	"log"
 	"os"
 	"strings"
 	"sync"
+
+	. "github.com/robaho/fixed"
+	. "github.com/robaho/go-trader/pkg/common"
+	"github.com/robaho/go-trader/pkg/protocol"
+	"google.golang.org/grpc"
 )
 
 type grpcConnector struct {
@@ -350,8 +351,7 @@ func NewConnector(callback ConnectorCallback, props Properties, logOutput io.Wri
 	if logOutput == nil {
 		logOutput = os.Stdout
 	}
-	c := &grpcConnector{props: props, log: logOutput}
-	c.callback = callback
+	c := &grpcConnector{props: props, log: logOutput, callback: callback}
 
 	return c
 }

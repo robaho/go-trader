@@ -3,6 +3,7 @@ package common
 import (
 	"bufio"
 	"io"
+	"maps"
 	"os"
 	"strings"
 )
@@ -12,13 +13,14 @@ import (
 type Properties interface {
 	GetString(key string, def string) string
 	SetString(key string, value string)
+	Clone() Properties
 }
 
 type properties struct {
 	props map[string]string
 }
 
-func (p *properties) GetString(key string, def string) string {
+func (p properties) GetString(key string, def string) string {
 	key = strings.TrimSpace(key)
 	v, ok := p.props[key]
 	if !ok {
@@ -27,9 +29,13 @@ func (p *properties) GetString(key string, def string) string {
 	return v
 }
 
-func (p *properties) SetString(key string, value string) {
+func (p properties) SetString(key string, value string) {
 	key = strings.TrimSpace(key)
 	p.props[key] = value
+}
+
+func (p properties) Clone() Properties {
+	return properties{props: maps.Clone(p.props)}
 }
 
 func NewProperties(file string) (Properties, error) {
