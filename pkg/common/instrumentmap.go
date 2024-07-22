@@ -45,7 +45,7 @@ func (im *instrumentMap) AllSymbols() []string {
 
 // the put/nextID are only needed if dynamic instrument creation is added, or for test cases
 
-func (im *instrumentMap) nextID() int64 {
+func (im *instrumentMap) NextID() int64 {
 	return atomic.AddInt64(&im.id, 1)
 }
 

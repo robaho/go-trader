@@ -219,8 +219,7 @@ func (app *myApplication) onSecurityDefinitionRequest(msg securitydefinitionrequ
 	if instrument != nil {
 		app.sendInstrument(instrument, reqid, sessionID)
 	} else {
-		app.instrumentID++
-		instrument = NewInstrument(app.instrumentID, symbol)
+		instrument = NewInstrument(IMap.NextID(),symbol)
 		IMap.Put(instrument)
 		app.sendInstrument(instrument, reqid, sessionID)
 	}
@@ -325,6 +324,4 @@ func init() {
 	App.AddRoute(massquote.Route(App.onMassQuote))
 	App.AddRoute(securitydefinitionrequest.Route(App.onSecurityDefinitionRequest))
 	App.AddRoute(securitylistrequest.Route(App.onSecurityListRequest))
-
-	App.instrumentID = 1000000 // start high for dynamic instruments
 }

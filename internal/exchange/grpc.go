@@ -2,9 +2,10 @@ package exchange
 
 import (
 	"fmt"
-	. "github.com/robaho/fixed"
 	"log"
 	"strconv"
+
+	. "github.com/robaho/fixed"
 
 	"github.com/pkg/errors"
 	. "github.com/robaho/go-trader/pkg/common"
@@ -148,6 +149,8 @@ func (s *grpcServer) Connection(conn protocol.Exchange_ConnectionServer) error {
 			err = s.modify(conn, client, msg.GetRequest().(*protocol.InMessage_Modify).Modify)
 		case *protocol.InMessage_Cancel:
 			err = s.cancel(conn, client, msg.GetRequest().(*protocol.InMessage_Cancel).Cancel)
+		case *protocol.InMessage_Secdefreq:
+			err = s.createInstrument(conn, client, msg.GetRequest().(*protocol.InMessage_Secdefreq).Secdefreq)
 		}
 
 		if err != nil {
@@ -221,6 +224,19 @@ func (s *grpcServer) modify(server protocol.Exchange_ConnectionServer, client *g
 func (s *grpcServer) cancel(server protocol.Exchange_ConnectionServer, client *grpcClient, request *protocol.CancelOrderRequest) error {
 	s.e.CancelOrder(client, NewOrderID(strconv.Itoa(int(request.ClOrdId))))
 	return nil
+}
+func (s *grpcServer) createInstrument(conn protocol.Exchange_ConnectionServer, client *grpcClient, request *protocol.SecurityDefinitionRequest) error {
+	symbol := request.Symbol
+	instrument := IMap.GetBySymbol(symbol)
+	if instrument != nil {
+		sec := &protocol.OutMessage_Secdef{Secdef: &protocol.SecurityDefinition{Symbol: symbol, InstrumentID: instrument.ID()}}
+		return conn.Send(&protocol.OutMessage{Reply: sec})
+	} else {
+		instrument = NewInstrument(IMap.NextID(), symbol)
+		IMap.Put(instrument)
+		sec := &protocol.OutMessage_Secdef{Secdef: &protocol.SecurityDefinition{Symbol: symbol, InstrumentID: instrument.ID()}}
+		return conn.Send(&protocol.OutMessage{Reply: sec})
+	}
 }
 
 func toErrS(err error) string {
