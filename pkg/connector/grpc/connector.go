@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log"
-	"os"
 	"strings"
 	"sync"
 
@@ -348,10 +347,6 @@ func (c *grpcConnector) handleExecutionReport(rpt *protocol.ExecutionReport) {
 }
 
 func NewConnector(callback ConnectorCallback, props Properties, logOutput io.Writer) ExchangeConnector {
-	if logOutput == nil {
-		logOutput = os.Stdout
-	}
 	c := &grpcConnector{props: props, log: logOutput, callback: callback}
-
 	return c
 }
