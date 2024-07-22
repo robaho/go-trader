@@ -20,6 +20,7 @@ import (
 type MyCallback struct {
 	ch     chan bool
 	symbol string
+	instrumentWG *sync.WaitGroup
 }
 
 func (cb *MyCallback) OnBook(book *Book) {
@@ -28,7 +29,10 @@ func (cb *MyCallback) OnBook(book *Book) {
 	}
 }
 
-func (*MyCallback) OnInstrument(instrument Instrument) {
+func (cb *MyCallback) OnInstrument(instrument Instrument) {
+	if cb.instrumentWG!=nil {
+		cb.instrumentWG.Done()
+	}
 }
 
 func (*MyCallback) OnOrderStatus(order *Order) {
@@ -99,6 +103,10 @@ func main() {
 		p.SetString("marketdata_buffer", *mdbs)
 	}
 
+	if *bench > 0 {
+		createSymbols(p,quotedSymbols)
+	}
+
 	if len(quotedSymbols)>0 {
 		// have to use symbol as senderCompID if quoting multiple symbols since multiple connections are used
 		*symbolAsCompID=true;
@@ -113,6 +121,23 @@ func main() {
 	wg.Wait()
 }
 
+func createSymbols(p Properties,symbols []string) {
+	var wg = sync.WaitGroup{}
+	var callback = MyCallback{ch: make(chan bool, 128), symbol: "?", instrumentWG: &wg}
+	var exchange = connector.NewConnector(&callback, p, nil)
+
+	exchange.Connect()
+	if !exchange.IsConnected() {
+		panic("exchange is not connected")
+	}
+	for _,s := range symbols {
+		wg.Add(1)
+		exchange.CreateInstrument(s)
+	}
+	wg.Wait()
+	exchange.Disconnect()
+}
+
 func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCompID bool,wg *sync.WaitGroup) {
 	defer wg.Done()
 	p = p.Clone()
@@ -122,7 +147,7 @@ func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCom
 		p.SetString("senderCompID", symbol)
 	}
 
-	var callback = MyCallback{make(chan bool, 128), symbol}
+	var callback = MyCallback{ch:make(chan bool, 128), symbol: symbol}
 
 	var exchange = connector.NewConnector(&callback, p, nil)
 
