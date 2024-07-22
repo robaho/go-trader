@@ -44,8 +44,9 @@ func (*MyCallback) OnTrade(trade *Trade) {
 
 func main() {
 
-	symbol := flag.String("symbol", "IBM", "set the symbol")
+	symbol := flag.String("symbol", "", "set the symbol")
 	symbols := flag.String("symbols", "", "set the comma delimited list of symbols")
+	bench := flag.Int("bench", 0, "benchmark market maker using N symbols (n > 0)")
 	fix := flag.String("fix", "configs/qf_connector_settings", "set the fix session file")
 	props := flag.String("props", "configs/got_settings", "set exchange properties file")
 	delay := flag.Int("delay", 0, "set the delay in ms after each quote, 0 to disable")
@@ -60,16 +61,20 @@ func main() {
 
 	quotedSymbols := make([]string,0);
 
-	if(*symbols!="") {
+	if *symbols!="" {
 		quotedSymbols = append(quotedSymbols,strings.Split(*symbols,",")...)
-	} else if(*symbol!="") {
+	} else if *symbol!="" {
 		quotedSymbols = append(quotedSymbols,*symbol)
+	} else if *bench!=0 {
+		for i := range *bench {
+			quotedSymbols = append(quotedSymbols,fmt.Sprint("S",i+1))
+		}
 	}
 
-	fmt.Println("quoted symbols: ",strings.Join(quotedSymbols,","))
+	fmt.Println("quoted symbols:",strings.Join(quotedSymbols,","))
 
 	if len(quotedSymbols)==0 {
-		panic("most provide either symbols or symbol")
+		panic("most provide either symbols, symbol, or bench")
 	}
 
 	if *cpuprofile != "" {

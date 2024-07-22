@@ -1,6 +1,6 @@
 module github.com/robaho/go-trader
 
-go 1.21.0
+go 1.22
 
 require (
 	github.com/VividCortex/gohistogram v1.0.0

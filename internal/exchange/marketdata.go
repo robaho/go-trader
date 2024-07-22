@@ -5,13 +5,14 @@ import (
 	"container/list"
 	"encoding/binary"
 	"fmt"
-	. "github.com/robaho/fixed"
-	"golang.org/x/net/ipv4"
 	"log"
 	"net"
 	"strconv"
 	"sync"
 	"sync/atomic"
+
+	. "github.com/robaho/fixed"
+	"golang.org/x/net/ipv4"
 
 	. "github.com/robaho/go-trader/pkg/common"
 	"github.com/robaho/go-trader/pkg/protocol"
@@ -23,7 +24,7 @@ var bookCache sync.Map
 var statsCache sync.Map
 
 var eventChannel chan MarketEvent
-var lastSentBook map[Instrument]uint64 // to avoid publishing exact same book multiple times due to coalescing
+var lastSentBook map[string]uint64 // to avoid publishing exact same book multiple times due to coalescing
 var sequence uint64
 var udpCon *net.UDPConn
 var pUdpCon *ipv4.PacketConn
@@ -186,7 +187,7 @@ func publish() {
 }
 
 func getLatestBook(book *Book) *Book {
-	lastSeq, ok := lastSentBook[book.Instrument]
+	lastSeq, ok := lastSentBook[book.Instrument.Symbol()]
 	if ok {
 		if lastSeq >= book.Sequence {
 			return nil
@@ -238,8 +239,8 @@ func sendPacket(data []byte) {
 }
 
 func startMarketData() {
-	eventChannel = make(chan MarketEvent, 1000)
-	lastSentBook = make(map[Instrument]uint64)
+	eventChannel = make(chan MarketEvent, 1024*1024)
+	lastSentBook = make(map[string]uint64)
 
 	// read settings and create socket
 
@@ -276,7 +277,10 @@ func startMarketData() {
 	if err != nil {
 		panic(err)
 	}
-	c.SetWriteBuffer(1024 * 1024)
+	err = c.SetWriteBuffer(props.GetBytes("marketdata_buffer",1024 * 1024))
+	if err!=nil {
+		fmt.Println("unable to set udp write buffer size",err)
+	}
 
 	udpCon = c
 	pUdpCon = ipv4.NewPacketConn(udpCon)
