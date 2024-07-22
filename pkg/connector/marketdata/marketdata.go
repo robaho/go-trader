@@ -88,7 +88,7 @@ func StartMarketDataReceiver(c ExchangeConnector, callback ConnectorCallback, pr
 			panic(err)
 		}
 		log.Println("listening for market data on", l.LocalAddr())
-		l.SetReadBuffer(16 * 1024 * 1024)
+		l.SetReadBuffer(props.GetBytes("marketdata_buffer",1024*1024))
 		b := make([]byte, protocol.MaxMsgSize)
 		for {
 			n, _, err := l.ReadFromUDP(b)

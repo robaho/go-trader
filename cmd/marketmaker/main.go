@@ -54,6 +54,7 @@ func main() {
 	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
 	senderCompID := flag.String("id", "MM", "set the SenderCompID")
 	symbolAsCompID := flag.Bool("sid", false, "use symbol as SenderCompID")
+	mdbs := flag.String("mdbs", "", "market data buffer size (e.g. 1M, 16384, etc.)")
 
 	flag.Parse()
 
@@ -89,6 +90,9 @@ func main() {
 	}
 	p.SetString("fix", *fix)
 	p.SetString("senderCompID", *senderCompID)
+	if *mdbs!="" {
+		p.SetString("marketdata_buffer", *mdbs)
+	}
 
 	if len(quotedSymbols)>0 {
 		// have to use symbol as senderCompID if quoting multiple symbols since multiple connections are used

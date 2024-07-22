@@ -13,6 +13,7 @@ import (
 type Properties interface {
 	GetString(key string, def string) string
 	SetString(key string, value string)
+	GetBytes(key string, def int) int
 	Clone() Properties
 }
 
@@ -33,6 +34,20 @@ func (p properties) SetString(key string, value string) {
 	key = strings.TrimSpace(key)
 	p.props[key] = value
 }
+
+func (p properties) GetBytes(key string, def int) int {
+	key = strings.TrimSpace(key)
+	v, ok := p.props[key]
+	if !ok {
+		return def
+	}
+	v = strings.ToUpper(v)
+	if strings.HasSuffix(v,"M") {
+		return ParseInt(v[:len(v)-1]) * 1024 * 1024
+	}
+	return ParseInt(v)
+}
+
 
 func (p properties) Clone() Properties {
 	return properties{props: maps.Clone(p.props)}
