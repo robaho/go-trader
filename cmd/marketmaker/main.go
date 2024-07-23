@@ -80,7 +80,7 @@ func main() {
 	fmt.Println("quoted symbols:",strings.Join(quotedSymbols,","))
 
 	if len(quotedSymbols)==0 {
-		panic("most provide either symbols, symbol, or bench")
+		panic("must provide either symbols, symbol, or bench")
 	}
 
 	if *cpuprofile != "" {
@@ -133,9 +133,9 @@ func createSymbols(p Properties,symbols []string) {
 	var callback = MyCallback{ch: make(chan bool, 128), symbol: "?", instrumentWG: &wg}
 	var exchange = connector.NewConnector(&callback, p, nil)
 
-	exchange.Connect()
+	err := exchange.Connect()
 	if !exchange.IsConnected() {
-		panic("exchange is not connected")
+		panic(fmt.Errorf("exchange is not connected %w",err))
 	}
 	for _,s := range symbols {
 		wg.Add(1)
@@ -150,9 +150,9 @@ func downloadInstruments(p Properties) {
 	var callback = MyCallback{ch: make(chan bool, 128), symbol: "?"}
 	var exchange = connector.NewConnector(&callback, p, nil)
 
-	exchange.Connect()
+	err := exchange.Connect()
 	if !exchange.IsConnected() {
-		panic("exchange is not connected")
+		panic(fmt.Errorf("exchange is not connected %w",err))
 	}
 	exchange.DownloadInstruments()
 	exchange.Disconnect()
