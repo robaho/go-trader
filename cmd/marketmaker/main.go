@@ -119,6 +119,7 @@ func main() {
 		go quoteSymbol(symbol,p,*duration,*delay,*symbolAsCompID, &wg)
 	}
 	wg.Wait()
+	fmt.Println("all quoters completed")
 }
 
 func createSymbols(p Properties,symbols []string) {
@@ -135,6 +136,7 @@ func createSymbols(p Properties,symbols []string) {
 		exchange.CreateInstrument(s)
 	}
 	wg.Wait()
+	fmt.Println("created",len(symbols),"instruments")
 	exchange.Disconnect()
 }
 
@@ -155,6 +157,7 @@ func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCom
 	if !exchange.IsConnected() {
 		panic("exchange is not connected")
 	}
+	defer exchange.Disconnect()
 
 	err := exchange.DownloadInstruments()
 	if err != nil {
@@ -220,9 +223,8 @@ func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCom
 			}
 			<-callback.ch
 			// drain channel
-			if len(callback.ch) > 0 {
-				for range callback.ch {
-				}
+			for len(callback.ch) > 0 {
+				<-callback.ch
 			}
 		}
 		h.Add(float64(time.Since(now).Nanoseconds()))
@@ -230,11 +232,13 @@ func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCom
 			time.Sleep(time.Duration(int64(delay)) * time.Millisecond)
 		}
 		atomic.AddUint64(&updates, 1)
-		if time.Since(start).Seconds() > 10 {
-			fmt.Printf("updates per second %d, avg rtt %dus, 10%% rtt %dus 99%% rtt %dus\n", updates/10, int(h.Mean()/1000.0), int(h.Quantile(.10)/1000.0), int(h.Quantile(.99)/1000.0))
+		seconds := time.Since(start).Seconds()
+		if seconds > 10 {
+			fmt.Printf("%s updates per second %d, avg rtt %dus, 10%% rtt %dus 99%% rtt %dus\n", symbol, updates/uint64(seconds), int(h.Mean()/1000.0), int(h.Quantile(.10)/1000.0), int(h.Quantile(.99)/1000.0))
 			updates = 0
 			start = time.Now()
 			h = gohistogram.NewHistogram(50)
 		}
 	}
+	fmt.Println("completed sending quotes on", instrument.Symbol())
 }

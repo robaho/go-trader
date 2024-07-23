@@ -18,7 +18,8 @@
             "request": "launch",
             "mode": "auto",
             "program": "cmd/marketmaker",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "args": ["-bench","100","-proto","grpc","-mdbs","8m","-duration","30"]
         }
     ]
 }
