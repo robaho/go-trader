@@ -22,7 +22,7 @@ market maker bid/ask spread must be accounted for - which makes it far less than
 
 There are two different web interfaces available:
 - the default interface at / uses Go templates and server side rendering
-- the alternative UI is written with Lit, and is available at /lit
+- the alternative UI is written in Typescript using [Lit](https://lit.dev), and is available at /lit
 
 Use `npm run build` in the web_lit directory to build the Lit assets.
 
