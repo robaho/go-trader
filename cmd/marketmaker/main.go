@@ -109,6 +109,8 @@ func main() {
 		createSymbols(p,quotedSymbols)
 	}
 
+	downloadInstruments(p)
+
 	if len(quotedSymbols)>0 {
 		// have to use symbol as senderCompID if quoting multiple symbols since multiple connections are used
 		*symbolAsCompID=true;
@@ -120,7 +122,9 @@ func main() {
 		wg.Add(1)
 		go quoteSymbol(symbol,p,*duration,*delay,*symbolAsCompID, &wg)
 	}
+	go reportRate()
 	wg.Wait()
+	close(timingQueue)
 	fmt.Println("all quoters completed")
 }
 
@@ -142,12 +146,53 @@ func createSymbols(p Properties,symbols []string) {
 	exchange.Disconnect()
 }
 
-func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCompID bool,wg *sync.WaitGroup) {
+func downloadInstruments(p Properties) {
+	var callback = MyCallback{ch: make(chan bool, 128), symbol: "?"}
+	var exchange = connector.NewConnector(&callback, p, nil)
+
+	exchange.Connect()
+	if !exchange.IsConnected() {
+		panic("exchange is not connected")
+	}
+	exchange.DownloadInstruments()
+	exchange.Disconnect()
+}
+
+var numberQuotes uint64
+var timingQueue = make(chan int64,1024*1024)
+
+func reportRate() {
+	var max uint64
+	h := gohistogram.NewHistogram(50)
+
+	start:= time.Now()
+	prev := atomic.LoadUint64(&numberQuotes)
+
+	for {
+		timing := <- timingQueue
+		h.Add(float64(timing))
+		seconds := time.Since(start).Seconds()
+		if seconds > 10 {
+			current := atomic.LoadUint64(&numberQuotes)
+			updates := current - prev
+			rate := updates/uint64(seconds)
+			if rate > max {
+				max = rate
+			}
+			fmt.Printf("updates per second %d, max ups %d,  avg rtt %dus, 10%% rtt %dus 99%% rtt %dus\n", rate, max, int(h.Mean()/1000.0), int(h.Quantile(.10)/1000.0), int(h.Quantile(.99)/1000.0))
+			h = gohistogram.NewHistogram(50)
+			start = time.Now()
+			prev = atomic.LoadUint64(&numberQuotes)
+		}
+	}
+}
+
+func quoteSymbol(symbol string, p Properties,duration int,delay int,symbolAsCompID bool,wg *sync.WaitGroup) {
 	defer wg.Done()
 	p = p.Clone()
 
 	if symbolAsCompID {
-		fmt.Println("setting senderCompID to",symbol)
+		// fmt.Println("setting senderCompID to",symbol)
 		p.SetString("senderCompID", symbol)
 	}
 
@@ -161,22 +206,15 @@ func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCom
 	}
 	defer exchange.Disconnect()
 
-	err := exchange.DownloadInstruments()
-	if err != nil {
-		panic(err)
-	}
-
 	instrument := IMap.GetBySymbol(symbol)
 	if instrument == nil {
 		log.Fatal("unknown symbol", symbol)
 	}
 
-	var updates uint64
-
 	start := time.Now()
 	end := start.Add(time.Duration(int64(duration)) * time.Second)
 
-	fmt.Println("sending quotes on", instrument.Symbol(), "...")
+	// fmt.Println("sending quotes on", instrument.Symbol(), "...")
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -187,8 +225,6 @@ func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCom
 
 	lowLim := NewDecimal("75")
 	highLim := NewDecimal("125")
-
-	h := gohistogram.NewHistogram(50)
 
 	for duration == 0 || time.Now().Before(end) {
 		var delta = 1
@@ -229,18 +265,11 @@ func quoteSymbol(symbol string, p Properties,duration int, delay int,symbolAsCom
 				<-callback.ch
 			}
 		}
-		h.Add(float64(time.Since(now).Nanoseconds()))
+		timingQueue <- time.Since(now).Nanoseconds()
+		atomic.AddUint64(&numberQuotes, 1)
 		if delay != 0 {
 			time.Sleep(time.Duration(int64(delay)) * time.Millisecond)
 		}
-		atomic.AddUint64(&updates, 1)
-		seconds := time.Since(start).Seconds()
-		if seconds > 10 {
-			fmt.Printf("%s updates per second %d, avg rtt %dus, 10%% rtt %dus 99%% rtt %dus\n", symbol, updates/uint64(seconds), int(h.Mean()/1000.0), int(h.Quantile(.10)/1000.0), int(h.Quantile(.99)/1000.0))
-			updates = 0
-			start = time.Now()
-			h = gohistogram.NewHistogram(50)
-		}
 	}
-	fmt.Println("completed sending quotes on", instrument.Symbol())
+	// fmt.Println("completed sending quotes on", instrument.Symbol())
 }

@@ -41,7 +41,7 @@ func StartMarketDataReceiver(c ExchangeConnector, callback ConnectorCallback, pr
 
 	existing,ok := receivers[saddr]
 	if ok {
-		fmt.Fprintln(logOutput,"adding connector to existing md connector",saddr)
+		// fmt.Fprintln(logOutput,"adding connector to existing md connector",saddr)
 		// existing receiver for this address, so only add our callback
 		callbacks := existing.callbacks.Load().([]ConnectorCallback)
 		callbacks = append(callbacks, callback)
