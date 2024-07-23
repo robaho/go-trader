@@ -64,15 +64,27 @@ Configuration:
 
 **using `marketmaker -bench 75 -proto fix`**
 
-75k+ round-trip quotes per second with an average latency of 1ms
+90k+ round-trip quotes per second with an average latency of 1ms
 
-**using `marketmaker -bench 150 -proto grpc`**
+```
+updates per second 72707, max ups 72707,  avg rtt 832us, 10% rtt 595us 99% rtt 5365us
+updates per second 90279, max ups 90279,  avg rtt 830us, 10% rtt 0us 99% rtt 4515us
+updates per second 89215, max ups 90279,  avg rtt 840us, 10% rtt 0us 99% rtt 4851us
+```
 
-**300k+** round-trip quotes per second with an average latency of 500us
+**using `marketmaker -bench 250 -proto grpc`**
+
+**400k+** round-trip quotes per second with an average latency of 600us
+
+```
+updates per second 410094, max ups 414584,  avg rtt 609us, 10% rtt 0us 99% rtt 2390us
+updates per second 411559, max ups 414584,  avg rtt 607us, 10% rtt 0us 99% rtt 2455us
+updates per second 412884, max ups 414584,  avg rtt 605us, 10% rtt 0us 99% rtt 2270us
+```
 
 _The CPUs are saturated on both the client and server._
 
-## 3 microsecs per roundtrip quote over the network ! ##
+## less than 3 microseconds per roundtrip quote over the network ! ##
 <br>
 
 # REST api
