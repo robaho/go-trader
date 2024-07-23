@@ -24,12 +24,14 @@ type MyCallback struct {
 }
 
 func (cb *MyCallback) OnBook(book *Book) {
+	// fmt.Println("received book",book.Instrument.Symbol())
 	if book.Instrument.Symbol() == cb.symbol {
 		cb.ch <- true
 	}
 }
 
 func (cb *MyCallback) OnInstrument(instrument Instrument) {
+	// fmt.Println("received instrument",instrument.ID(),instrument.Symbol())
 	if cb.instrumentWG!=nil {
 		cb.instrumentWG.Done()
 	}

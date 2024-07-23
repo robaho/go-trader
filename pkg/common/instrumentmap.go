@@ -76,6 +76,10 @@ func (im *instrumentMap) Load(filepath string) error {
 		if len(parts) == 2 {
 			i := NewInstrument(int64(id), parts[1])
 			im.Put(i)
+			if id > int(im.id) {
+				// ensure next dynamic instrument does not collide with loaded ones
+				atomic.StoreInt64(&im.id,int64(id))
+			}
 		}
 	}
 	return nil
