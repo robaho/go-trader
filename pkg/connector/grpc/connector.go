@@ -21,6 +21,7 @@ type grpcConnector struct {
 	// holds OrderID->*Order, concurrent since notifications/updates may arrive while order is being processed
 	orders   sync.Map
 	stream   protocol.Exchange_ConnectionClient
+	addr     string
 	loggedIn StatusBool
 	// true after all instruments are downloaded from exchange
 	downloaded StatusBool
@@ -28,8 +29,13 @@ type grpcConnector struct {
 	log        io.Writer
 }
 
+type cachedConnection struct {
+	refCount int
+	conn *grpc.ClientConn
+}
+
 //TODO need reference count, since grpc.ClientConn is shared to allow for complete clean-up
-var clients map[string]*grpc.ClientConn = make(map[string]*grpc.ClientConn)
+var clients map[string]*cachedConnection = make(map[string]*cachedConnection)
 var connectionLock = sync.Mutex{}
 
 func (c *grpcConnector) IsConnected() bool {
@@ -45,15 +51,20 @@ func (c *grpcConnector) Connect() error {
 	}
 
 	addr := c.props.GetString("grpc_host", "localhost") + ":" + c.props.GetString("grpc_port", "5000")
+	c.addr = addr
 
-	conn, ok := clients[addr]
+	cached, ok := clients[addr]
+	var conn *grpc.ClientConn
 	var err error
 	if !ok {
 		conn, err = grpc.Dial(addr, grpc.WithInsecure())
 		if err != nil {
 			return err
 		}
-		clients[addr]=conn
+		clients[addr]=&cachedConnection{conn: conn, refCount: 1}
+	} else {
+		conn = cached.conn
+		cached.refCount++
 	}
 
 	client := protocol.NewExchangeClient(conn)
@@ -83,6 +94,9 @@ func (c *grpcConnector) Connect() error {
 		for {
 			msg, err := stream.Recv()
 			if err != nil {
+				if !c.IsConnected() {
+					return
+				}
 				log.Println("unable to receive message", err)
 				c.Disconnect()
 				return
@@ -133,12 +147,23 @@ func (c *grpcConnector) Connect() error {
 }
 
 func (c *grpcConnector) Disconnect() error {
+	connectionLock.Lock()
+	defer connectionLock.Unlock()
+
 	if !c.connected {
 		return NotConnected
 	}
+
 	c.stream.CloseSend()
 	c.connected = false
 	c.loggedIn.SetFalse()
+
+	cached := clients[c.addr]
+	cached.refCount--
+	if cached.refCount==0 {
+		delete(clients,c.addr)
+	}
+
 	return nil
 }
 
