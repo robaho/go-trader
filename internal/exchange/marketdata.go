@@ -258,7 +258,7 @@ func startMarketData() {
 	}
 	_intf, err := net.InterfaceByName(intf)
 	if err != nil {
-		panic("unable to read multicast interface")
+		panic(err)
 	}
 
 	fmt.Println("publishing marketdata at", saddr)
