@@ -74,7 +74,7 @@ Configuration:
 - a quote is a double-sided (bid & ask) 
 - timings are measured from the quote message generation on the client, to the reception of the multicast market data on the client
 - 90k+ quote per second over the network using FIX with latency < 1ms
-- 400k+ quote per second over the network using FIX with latency < 600 usec
+- 400k+ quote per second over the network using gRPC with latency < 600 usec
 
 <details>
     <summary>performance details</summary>
