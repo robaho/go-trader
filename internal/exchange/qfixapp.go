@@ -13,6 +13,7 @@ import (
 	"github.com/quickfixgo/field"
 	"github.com/quickfixgo/fix44/executionreport"
 	"github.com/quickfixgo/fix44/massquote"
+	"github.com/quickfixgo/fix44/massquoteacknowledgement"
 	"github.com/quickfixgo/fix44/newordersingle"
 	"github.com/quickfixgo/fix44/ordercancelreplacerequest"
 	"github.com/quickfixgo/fix44/ordercancelrequest"
@@ -162,6 +163,19 @@ func (app *myApplication) onMassQuote(msg massquote.MassQuote, sessionID quickfi
 	if rgNoQuoteSets.Len() != 1 {
 		return quickfix.NewBusinessMessageRejectError("only 1 quote set supported", 0, nil)
 	}
+
+	quoteId, err := msg.GetQuoteID()
+	if err != nil {
+		return err
+	}
+	ackRequested := false
+	if msg.HasQuoteResponseLevel() {
+		responseLevel,err := msg.GetQuoteResponseLevel();
+		if err == nil && responseLevel == enum.QuoteResponseLevel_ACKNOWLEDGE_EACH_QUOTE_MESSAGE {
+			ackRequested = true;
+		}
+	}
+
 	noQuoteSets := rgNoQuoteSets.Get(0)
 	rgNoQuoteEntries, err := noQuoteSets.GetNoQuoteEntries()
 	if rgNoQuoteEntries.Len() != 1 {
@@ -197,6 +211,10 @@ func (app *myApplication) onMassQuote(msg massquote.MassQuote, sessionID quickfi
 
 	c := fixClient{sessionID: sessionID}
 	app.e.Quote(c, instrument, ToFixed(bidPrice), ToFixed(bidQty), ToFixed(offerPrice), ToFixed(offerQty))
+
+	if ackRequested {
+		app.sendQuoteAcceptedAck(quoteId,sessionID);
+	}
 
 	return nil
 }
@@ -252,6 +270,15 @@ func (app *myApplication) sendInstrument(instrument Instrument, reqid string, se
 
 	quickfix.SendToTarget(msg, sessionID)
 }
+
+func (app *myApplication) sendQuoteAcceptedAck(quoteID string, sessionID quickfix.SessionID) {
+	status := field.QuoteStatusField{FIXString: quickfix.FIXString(enum.QuoteStatus_ACCEPTED)}
+	
+	msg := massquoteacknowledgement.New(status);
+	msg.SetQuoteID(quoteID);
+	quickfix.SendToTarget(msg, sessionID)
+}
+
 
 func (app *myApplication) sendTradeExecutionReport(so sessionOrder, price Fixed, qty Fixed, remaining Fixed) {
 
