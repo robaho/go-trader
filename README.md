@@ -2,7 +2,7 @@
 
 A financial exchange written in Go including complete order book, fix protocol, and market data distribution.
 
-Check out [cpp_orderbook](https://github.com/robaho/cpp_orderbook) for a basic C++ version.
+Check out [cpp-trader](https://github.com/robaho/cpp-trader) for a C++ version, albeit with less features.
 
 ## Features
 
