@@ -116,3 +116,16 @@ localhost:8080/api/stats/SYMBOL
 ![client screen shot](doc/clientss.png)
 ![web screen shot](doc/webss.png)
 ![lit screen shot](doc/litss.png)
+
+# Common issues
+
+## Error: `route ip+net: no such network interface`
+
+This error is most likely caused because `got_settings` is configured by default as `multicast_intf=lo0`.
+
+The lo0 interface is a loopback interface on Unix-based systems, but it might not be named lo0 on all systems. On Linux, it's usually named lo. On macOS and some BSD systems, it might be named lo0.
+
+Ensure that the lo0 interface exists on your system. You can list network interfaces using:
+
+- Linux/macOS: `ifconfig` or `ip a`
+- Windows: `ipconfig /all`
