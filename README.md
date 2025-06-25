@@ -35,7 +35,7 @@ There are two different web interfaces available:
 
 Use `npm run build` in the `web_lit` directory to build the Lit assets.
 
-It was primarily developed to further my knowledge of Go and test its suitability for high-performance financial applications.
+It was originally developed to further my knowledge of Go and test its suitability for high-performance financial applications, and it has continued to evolve into an ideal teaching project for Go facilities (interfaces, networking, web development, Go routines, etc.).
 
 # install
 
