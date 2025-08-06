@@ -2,6 +2,8 @@
 
 A financial exchange written in Go including complete order book, fix protocol, and market data distribution.
 
+It was originally developed to further my knowledge of Go and test its suitability for high-performance financial applications, and it has continued to evolve into an ideal teaching/reference project for Go (interfaces, low-level networking, web development, json, Go routines, etc.).
+
 Check out [cpp-trader](https://github.com/robaho/cpp-trader) for a C++ version, albeit with less features.
 
 ## Features
@@ -34,8 +36,6 @@ There are two different web interfaces available:
 - the alternative UI at `/lit` is written in Typescript using [Lit](https://lit.dev) and the Rest api
 
 Use `npm run build` in the `web_lit` directory to build the Lit assets.
-
-It was originally developed to further my knowledge of Go and test its suitability for high-performance financial applications, and it has continued to evolve into an ideal teaching project for Go facilities (interfaces, networking, web development, Go routines, etc.).
 
 # install
 
