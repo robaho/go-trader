@@ -2,12 +2,13 @@ package exchange
 
 import (
 	"fmt"
-	. "github.com/robaho/fixed"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	. "github.com/robaho/fixed"
 
 	. "github.com/robaho/go-trader/pkg/common"
 )
@@ -139,6 +140,10 @@ func (e *exchange) ModifyOrder(client exchangeClient, orderId OrderID, price Fix
 	order, ok := s.orders[orderId]
 	if !ok {
 		return OrderNotFound
+	}
+
+	if !order.IsActive() {
+		return OrderIsNotActive
 	}
 
 	ob := e.lockOrderBook(order.Instrument)

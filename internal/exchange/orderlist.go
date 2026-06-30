@@ -13,16 +13,21 @@ type listNode struct {
 	order sessionOrder
 }
 
+type orderKey struct {
+	client exchangeClient
+	order  *common.Order
+}
+
 // optimized structure to allow efficient removal at start, middle, and end
 type orderList struct {
 	head *listNode
 	tail *listNode
 	size int
-	allOrders map[sessionOrder]*listNode
+	allOrders map[orderKey]*listNode
 }
 
 func OrderList() orderList {
-	return orderList{allOrders: make(map[sessionOrder]*listNode)}
+	return orderList{allOrders: make(map[orderKey]*listNode)}
 }
 
 func (list *orderList) String() string {
@@ -50,7 +55,7 @@ func (l *orderList) pushBack(so sessionOrder) {
 	}
 	l.tail = node
 	l.size++
-	l.allOrders[so]=node
+	l.allOrders[orderKey{so.client, so.order}]=node
 }
 
 func (l *orderList) pushFront(so sessionOrder) {
@@ -60,18 +65,20 @@ func (l *orderList) pushFront(so sessionOrder) {
 	}
 	l.head = node
 	l.size++
-	l.allOrders[so]=node
+	l.allOrders[orderKey{so.client, so.order}]=node
 }
 func (l *orderList) remove(so sessionOrder) error {
-	node,ok := l.allOrders[so]
+	node,ok := l.allOrders[orderKey{so.client, so.order}]
 	if !ok {
 		return common.OrderNotFound
 	}
-	delete(l.allOrders,so)
+	delete(l.allOrders,orderKey{so.client, so.order})
 
 	if node == l.head {
 		if(node.next!=nil) {
 			node.next.prev=nil
+		} else {
+			l.tail = nil
 		}
 		l.head = node.next;
 	} else if node == l.tail {

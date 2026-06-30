@@ -2,8 +2,9 @@ package common
 
 import (
 	"errors"
-	. "github.com/robaho/fixed"
 	"time"
+
+	. "github.com/robaho/fixed"
 )
 
 type ExchangeConnector interface {
@@ -67,3 +68,4 @@ var InvalidConnector = errors.New("invalid connector")
 var UnknownInstrument = errors.New("unknown instrument")
 var UnsupportedOrderType = errors.New("unsupported order type")
 var DownloadFailed = errors.New("download failed")
+var OrderIsNotActive = errors.New("order is not active")
